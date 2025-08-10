@@ -1,0 +1,16 @@
+{
+  "name": "finvault-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "services/*"
+  ],
+  "scripts": {
+    "install": "npm install",
+    "start:api": "npm --workspace services/api-server run dev",
+    "start:mobile": "npm --workspace apps/mobile-app run start",
+    "build:api": "npm --workspace services/api-server run build",
+    "build:mobile": "npm --workspace apps/mobile-app run build"
+  }
+}
