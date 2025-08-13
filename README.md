@@ -1,6 +1,6 @@
 # FinVault
 
-This repository is an initial scaffold for the FinVault monorepo:
+This repository is for the FinVault monorepo:
 
 - `apps` — Expo (React Native / TypeScript) mobile app
 - `services` — Express (TypeScript) API server
