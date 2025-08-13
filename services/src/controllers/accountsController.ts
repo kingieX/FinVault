@@ -1,0 +1,52 @@
+import { Request, Response } from "express";
+import { pool } from "../lib/db";
+
+// Function to get all accounts with their recent transactions
+export async function getAccounts(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user.id;
+
+    // Fetch accounts
+    const accountsResult = await pool.query(
+      `
+      SELECT id, name, type, balance, created_at
+      FROM accounts
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      `,
+      [userId]
+    );
+
+    const accounts = accountsResult.rows;
+
+    // Fetch recent transactions for all accounts
+    const transactionsResult = await pool.query(
+      `
+      SELECT 
+        t.id,
+        t.account_id,
+        t.description,
+        t.category,
+        t.amount,
+        t.date
+      FROM transactions t
+      WHERE t.user_id = $1
+      ORDER BY t.date DESC
+      `,
+      [userId]
+    );
+
+    // Attach transactions to their respective account
+    const accountsWithTx = accounts.map((account) => ({
+      ...account,
+      recent_transactions: transactionsResult.rows
+        .filter((tx) => tx.account_id === account.id)
+        .slice(0, 5), // only latest 5
+    }));
+
+    res.json(accountsWithTx);
+  } catch (err) {
+    console.error("Error fetching accounts:", err);
+    res.status(500).json({ error: "Failed to fetch accounts" });
+  }
+}
