@@ -139,3 +139,48 @@ export async function createGoal(data: {
   });
   return res.data;
 }
+
+// Function to Get notifications
+export async function getNotifications() {
+  const token = await getToken("token");
+  if (!token) return [];
+
+  const res = await axios.get(`${API_URL}/notifications`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// Function to mark a notification as read
+export async function markNotificationAsRead(id: string) {
+  const token = await getToken("token");
+  if (!token) return null;
+  const res = await axios.patch(
+    `${API_URL}/notifications/${id}/read`,
+    {},
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return res.data;
+}
+
+// Function to get unread notifications count
+export async function getUnreadNotificationsCount() {
+  const token = await getToken("token");
+  if (!token) return 0;
+  const res = await axios.get(`${API_URL}/notifications/unread-count`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data.count;
+}
+
+// Function to get insights
+export async function getInsights(limit = 3) {
+  const token = await getToken("token");
+  if (!token) return [];
+  const res = await axios.get(`${API_URL}/insights?limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}

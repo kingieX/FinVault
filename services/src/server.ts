@@ -8,8 +8,13 @@ import transactionsRoutes from "./routes/transactionsRoutes";
 import accountsRoutes from "./routes/accountsRoutes";
 import budgetsRoutes from "./routes/budgetsRoutes";
 import goalsRoutes from "./routes/goalsRoutes";
+import notificationsRoutes from "./routes/notificationsRoutes";
+import insightsRoutes from "./routes/insightsRoutes";
 
 import { pool } from "./lib/db";
+
+// Schedule the notification checks to run daily at midnight
+import "./scheduler";
 
 dotenv.config();
 
@@ -49,6 +54,12 @@ app.use("/api/v1/budgets", budgetsRoutes);
 
 // endpoint to get goals
 app.use("/api/v1/goals", goalsRoutes);
+
+// endpoint to get notifications
+app.use("/api/v1/notifications", notificationsRoutes);
+
+// endpoint to get insights
+app.use("/api/v1/insights", insightsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,12 @@ import { useRouter } from "expo-router";
 import ButtonPrimary from "@/components/ButtonPrimary";
 import { Ionicons } from "@expo/vector-icons";
 import { signup } from "@/lib/api";
+
+// push notification import
+import {
+  registerForPushNotificationsAsync,
+  sendDeviceTokenToBackend,
+} from "@/lib/notifications";
 
 import Toast from "react-native-toast-message";
 
@@ -32,6 +38,15 @@ export default function SignupScreen() {
 
   // Loading
   const [loading, setLoading] = useState(false);
+
+  // push notification setup
+  useEffect(() => {
+    (async () => {
+      const pushToken = await registerForPushNotificationsAsync();
+      if (pushToken) await sendDeviceTokenToBackend(pushToken);
+      console.log("Push token registered:", pushToken);
+    })();
+  }, []);
 
   // Handle signup
   const handleSignup = async () => {

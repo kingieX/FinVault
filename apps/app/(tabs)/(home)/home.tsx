@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator } from "react-native";
-import { getCurrentUser, getAccounts } from "@/lib/api";
+import { getCurrentUser, getAccounts, getInsights } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
 export default function HomeScreen() {
@@ -8,6 +8,18 @@ export default function HomeScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [insights, setInsights] = useState<any[]>([]);
+
+  // Fetch insights data
+  useEffect(() => {
+    (async () => {
+      const data = await getInsights(3);
+      setInsights(data);
+      // console.log("Insights data:", data);
+    })();
+  }, []);
+
+  // Fetch Account data
   useEffect(() => {
     async function fetchData() {
       try {
@@ -61,8 +73,31 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* Insights */}
+      <View className="bg-white pb-4 mb-6">
+        <Text className="text-xl font-semibold mb-2">Insights</Text>
+        {insights.length === 0 ? (
+          <Text className="text-gray-500">No insights available yet</Text>
+        ) : (
+          <View className="mt-4">
+            {insights.map((i) => (
+              <View
+                key={i.id}
+                className="bg-blue-50 p-4 rounded-lg mb-3 border border-blue-200"
+              >
+                <Text className="font-semibold">{i.title}</Text>
+                <Text className="text-gray-700">{i.message}</Text>
+                <Text className="text-gray-400 text-xs mt-1">
+                  {new Date(i.created_at).toLocaleString()}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
       {/* Recent Transactions */}
-      <Text className="text-lg font-semibold mb-3">Recent Transactions</Text>
+      <Text className="text-xl font-semibold mb-3">Recent Transactions</Text>
       {accounts.flatMap((acc) => acc.recent_transactions).length === 0 ? (
         <Text className="text-gray-500">No recent transactions</Text>
       ) : (

@@ -6,6 +6,8 @@ import { getToken, deleteToken } from "@/lib/storage";
 import { getCurrentUser } from "@/lib/api";
 import "./global.css";
 
+import * as Notifications from "expo-notifications";
+
 import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
 
 export default function RootLayout() {
@@ -16,6 +18,19 @@ export default function RootLayout() {
 
   // Routes that do not require authentication
   const publicRoutes = ["/welcome", "/signin", "/signup"];
+
+  // notification setup
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const screen = response.notification.request.content.data?.screen;
+        if (screen === "budgets") router.push("/(tabs)/budgets");
+        else if (screen === "goals") router.push("/(tabs)/goals");
+        else router.push("/(tabs)/(home)/home");
+      }
+    );
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     // deleteToken("token");
@@ -83,6 +98,7 @@ export default function RootLayout() {
         <Stack.Screen name="signup" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="/notifications" />
+
         <Stack.Screen name="/profile" />
       </Stack>
       <Toast

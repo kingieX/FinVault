@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev_secret"; // set in .env
 // Function to sign up a new user
 export async function signup(req: Request, res: Response) {
   const { email, password, name } = req.body;
-  console.log(req.body);
+  // console.log(req.body);
   if (!email || !password || !name)
     return res
       .status(400)
@@ -40,7 +40,7 @@ export async function signup(req: Request, res: Response) {
 // function to log in an existing user
 export async function login(req: Request, res: Response) {
   const { email, password } = req.body;
-  console.log(req.body);
+  // console.log(req.body);
   if (!email || !password)
     return res.status(400).json({ error: "Email and password are required" });
 

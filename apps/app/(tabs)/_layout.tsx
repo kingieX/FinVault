@@ -1,14 +1,33 @@
 import { Tabs, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import { getUnreadNotificationsCount } from "@/lib/api";
 
 export default function TabLayout() {
   const router = useRouter();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    async function loadCount() {
+      const count = await getUnreadNotificationsCount();
+      setUnreadCount(count);
+      // console.log("Unread notifications count:", count);
+    }
+    loadCount();
+    const interval = setInterval(loadCount, 30000); // refresh every 30 sec
+    return () => clearInterval(interval);
+  }, []);
 
   const headerRight = () => (
     <View className="flex-row items-center gap-3 px-4">
       <TouchableOpacity onPress={() => router.push("/notifications")}>
-        <Ionicons name="notifications-outline" size={28} color="#000" />
+        <Ionicons name="notifications-outline" size={24} color="#000" />
+        {unreadCount > 0 && (
+          <View className="absolute -top-1 -right-1 bg-red-500 rounded-full px-1.5 py-0.5">
+            <Text className="text-white text-xs">{unreadCount}</Text>
+          </View>
+        )}
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push("/profile")}>
         <Ionicons name="person-circle-outline" size={32} color="#000" />

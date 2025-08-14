@@ -1,5 +1,5 @@
 /* eslint-disable react/no-unescaped-entities */
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,12 @@ import ButtonPrimary from "@/components/ButtonPrimary";
 import { Ionicons } from "@expo/vector-icons";
 import { login } from "@/lib/api";
 
+// push notification import
+import {
+  registerForPushNotificationsAsync,
+  sendDeviceTokenToBackend,
+} from "@/lib/notifications";
+
 import Toast from "react-native-toast-message";
 
 export default function SigninScreen() {
@@ -31,6 +37,15 @@ export default function SigninScreen() {
 
   // Loading
   const [loading, setLoading] = useState(false);
+
+  // push notification setup
+  useEffect(() => {
+    (async () => {
+      const pushToken = await registerForPushNotificationsAsync();
+      if (pushToken) await sendDeviceTokenToBackend(pushToken);
+      console.log("Push token registered:", pushToken);
+    })();
+  }, []);
 
   // Handle login
   const handleLogin = async () => {
