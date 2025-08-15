@@ -41,14 +41,14 @@ export async function getPortfolio(req: Request, res: Response) {
       const cgRes = await axios.get(
         `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`
       );
-      Object.keys(cgRes.data).forEach((key) => {
+      Object.keys(cgRes.data).forEach((key: any) => {
         cryptoPrices[key] = cgRes.data[key].usd;
       });
     }
 
     // 4. Build response with calculations
     let totalValue = 0;
-    const enrichedAssets = assets.map((asset) => {
+    const enrichedAssets = assets.map((asset: any) => {
       const currentPrice =
         asset.asset_type === "stock"
           ? stockPrices[asset.symbol] || 0
@@ -71,7 +71,7 @@ export async function getPortfolio(req: Request, res: Response) {
     });
 
     // 5. Asset allocation calculation
-    const allocations = enrichedAssets.map((a) => ({
+    const allocations = enrichedAssets.map((a: any) => ({
       name: a.asset_name,
       type: a.asset_type,
       value: a.current_value,
