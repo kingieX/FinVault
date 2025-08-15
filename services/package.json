@@ -7,7 +7,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "ts-node-dev src/testDb.ts"
+    "test": "ts-node-dev src/testDb.ts",
+    "render-build": "npm install --include=dev && npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
