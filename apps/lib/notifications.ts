@@ -4,7 +4,8 @@ import { Platform } from "react-native";
 import { getToken } from "./storage";
 import axios from "axios";
 
-const API_URL = "http://172.20.10.3:5000/api/v1";
+// const API_URL = "http://172.20.10.3:5000/api/v1";
+const API_URL = "https://finvault-service.onrender.com/api/v1"; // Use this for production
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
