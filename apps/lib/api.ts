@@ -5,8 +5,8 @@ import { saveToken, getToken } from "@/lib/storage";
 // and look for the address under your active network connection (e.g., Wi-Fi or Ethernet)
 
 // const API_URL = "http://localhost:5000/api/v1";
-const API_URL = "http://172.20.10.3:5000/api/v1";
-// const API_URL = "https://finvault-service.onrender.com/api/v1"; // Use this for production
+// const API_URL = "http://172.20.10.3:5000/api/v1";
+const API_URL = "https://finvault-service.onrender.com/api/v1"; // Use this for production
 
 // ##--authentication functions--
 

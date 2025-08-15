@@ -18,19 +18,36 @@ export async function exchangeMonoCode(req: Request, res: Response) {
       { headers: { "mono-sec-key": MONO_SECRET_KEY } }
     );
 
-    const { id: accountId, auth_token } = response.data;
+    // Debug log in sandbox mode
+    if (process.env.MONO_ENVIRONMENT === "sandbox") {
+      console.log(
+        "Mono exchange response:",
+        JSON.stringify(response.data, null, 2)
+      );
+    }
+
+    const accountId = response.data?.id;
+    const authToken = response.data?.auth_token;
+
+    if (!accountId || !authToken) {
+      console.error("Mono response missing accountId/authToken", response.data);
+      return res.status(500).json({ error: "Invalid response from Mono" });
+    }
 
     await pool.query(
       `INSERT INTO linked_accounts (user_id, account_id, access_token)
        VALUES ($1, $2, $3)
        ON CONFLICT (account_id)
        DO UPDATE SET access_token = EXCLUDED.access_token, updated_at = NOW()`,
-      [userId, accountId, auth_token]
+      [userId, accountId, authToken]
     );
 
     res.json({ success: true, accountId });
   } catch (err: any) {
-    console.error("Error exchanging Mono code:", err.response?.data || err);
+    console.error(
+      "Error exchanging Mono code:",
+      err.response?.data || err.message
+    );
     res.status(500).json({ error: "Failed to link account" });
   }
 }

@@ -76,8 +76,8 @@ export default function AccountsTransactionsScreen() {
             </Text>
           </View>
           <TouchableOpacity
-            className="bg-primary px-6 w-full  py-4 rounded-lg"
-            onPress={() => alert("Connect account feature coming soon")}
+            className="bg-primary px-6 w-full py-4 rounded-lg"
+            onPress={() => setModalVisible(true)}
           >
             <Text className="text-white text-center font-semibold text-base">
               Connect Account
@@ -108,26 +108,48 @@ export default function AccountsTransactionsScreen() {
       )}
 
       {/* link account */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         className="flex-1 flex-row justify-center bg-primary py-4 rounded-lg items-center"
         onPress={() => setModalVisible(true)}
       >
         <Text className="text-white text-base font-medium">
           Link Bank Account
         </Text>
+      </TouchableOpacity> */}
+      <TouchableOpacity
+        className="bg-primary px-6 w-full py-4 rounded-lg"
+        onPress={() => setModalVisible(true)}
+      >
+        <Text className="text-white text-center font-semibold text-base">
+          Connect Account
+        </Text>
       </TouchableOpacity>
 
       <LinkAccountModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-        onSuccess={async (code: any) => {
-          const res = await linkAccount(code);
-          if (res.success) {
+        onSuccess={async (code: string) => {
+          try {
+            const res = await linkAccount(code);
+            if (res.success) {
+              Toast.show({
+                type: "success",
+                text1: "Account linked successfully",
+              });
+              fetchData();
+              setModalVisible(false);
+            } else {
+              Toast.show({
+                type: "error",
+                text1: res.error || "Failed to link account",
+              });
+            }
+          } catch (err) {
+            console.error("Error linking account:", err);
             Toast.show({
-              type: "success",
-              text1: "Account linked successfully",
+              type: "error",
+              text1: "Server error while linking account",
             });
-            fetchData(); // reload accounts
           }
         }}
       />
