@@ -7,6 +7,8 @@ import { saveToken, getToken } from "@/lib/storage";
 // const API_URL = "http://localhost:5000/api/v1";
 const API_URL = "http://172.20.10.3:5000/api/v1";
 
+// ##--authentication functions--
+
 // Function for signing up a new user
 export async function signup(email: string, password: string, name: string) {
   //   console.log({ email, password, name });
@@ -51,6 +53,8 @@ export async function getCurrentUser() {
   }
 }
 
+// ##--account functions--
+
 // Function to get all accounts with their recent transactions
 export async function getAccounts() {
   const token = await getToken("token");
@@ -63,6 +67,22 @@ export async function getAccounts() {
   });
   return res.data;
 }
+
+// Function to link account
+export async function linkAccount(code: string) {
+  const token = await getToken("token");
+  const res = await fetch(`${API_URL}/accounts/link-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ code }),
+  });
+  return res.json();
+}
+
+// ##--transaction functions--
 
 // Function to get all transactions for the authenticated user
 export async function getTransactions() {
@@ -77,6 +97,8 @@ export async function getTransactions() {
   return res.data;
 }
 
+// ##--budget functions--
+
 // Function to get budgets
 export async function getBudgets() {
   const token = await getToken("token");
@@ -88,7 +110,6 @@ export async function getBudgets() {
   return res.data;
 }
 
-// Function to Create a new budget
 // Function to Create a new budget
 export async function createBudget(data: {
   category: string;
@@ -110,6 +131,8 @@ export async function createBudget(data: {
 
   return res.data;
 }
+
+// ##--goal functions--
 
 // Function to Get goals
 export async function getGoals() {
@@ -139,6 +162,8 @@ export async function createGoal(data: {
   });
   return res.data;
 }
+
+// ##--notification functions--
 
 // Function to Get notifications
 export async function getNotifications() {
@@ -175,11 +200,114 @@ export async function getUnreadNotificationsCount() {
   return res.data.count;
 }
 
+// ##--insights functions--
+
 // Function to get insights
 export async function getInsights(limit = 3) {
   const token = await getToken("token");
   if (!token) return [];
   const res = await axios.get(`${API_URL}/insights?limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// ##--portfolio functions--
+
+let cachedCryptoList: any[] = [];
+let cachedStockList: any[] = [];
+
+/** Fetch crypto list (cached) */
+export async function fetchCryptoList() {
+  if (cachedCryptoList.length > 0) return cachedCryptoList;
+  const res = await axios.get("https://api.coingecko.com/api/v3/coins/list");
+  cachedCryptoList = res.data;
+  return cachedCryptoList;
+}
+
+/** Fetch stock list (cached, static JSON for now) */
+export async function fetchStockList() {
+  if (cachedStockList.length > 0) return cachedStockList;
+
+  // Example static stock list - replace with your JSON or API call
+  cachedStockList = [
+    { name: "Apple Inc.", symbol: "AAPL" },
+    { name: "Microsoft Corp.", symbol: "MSFT" },
+    { name: "Tesla Inc.", symbol: "TSLA" },
+    { name: "Amazon.com Inc.", symbol: "AMZN" },
+    { name: "Alphabet Inc.", symbol: "GOOGL" },
+  ];
+  return cachedStockList;
+}
+
+/** Fetch current price based on type + symbol */
+export async function getAssetPrice(type: "stock" | "crypto", symbol: string) {
+  if (type === "crypto") {
+    const res = await axios.get(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=usd`
+    );
+    return res.data[symbol]?.usd || null;
+  } else {
+    const res = await axios.get(
+      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`
+    );
+    return res.data.quoteResponse.result[0]?.regularMarketPrice || null;
+  }
+}
+
+// Function to get portfolio
+export async function getPortfolio() {
+  const token = await getToken("token");
+  if (!token) return null;
+
+  const res = await axios.get(`${API_URL}/portfolio`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// Function to create a new portfolio asset
+export async function createPortfolio(data: {
+  asset_name: string;
+  asset_type: "stock" | "crypto";
+  symbol: string;
+  quantity: number;
+  purchase_price: number;
+}) {
+  const token = await getToken("token");
+  if (!token) return null;
+
+  const res = await axios.post(`${API_URL}/portfolio`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+// Function to edit Portfolio Asset
+export async function updatePortfolio(
+  id: string,
+  data: Partial<{
+    asset_name: string;
+    asset_type: "stock" | "crypto";
+    symbol: string;
+    quantity: number;
+    purchase_price: number;
+  }>
+) {
+  const token = await getToken("token");
+  if (!token) return null;
+
+  const res = await axios.put(`${API_URL}/portfolio/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// Function to delete Portfolio Asset
+export async function deletePortfolio(id: string) {
+  const token = await getToken("token");
+  if (!token) return null;
+
+  const res = await axios.delete(`${API_URL}/portfolio/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;

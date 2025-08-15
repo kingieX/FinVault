@@ -10,6 +10,7 @@ import budgetsRoutes from "./routes/budgetsRoutes";
 import goalsRoutes from "./routes/goalsRoutes";
 import notificationsRoutes from "./routes/notificationsRoutes";
 import insightsRoutes from "./routes/insightsRoutes";
+import portfolioRoutes from "./routes/portfolioRoutes";
 
 import { pool } from "./lib/db";
 
@@ -61,9 +62,15 @@ app.use("/api/v1/notifications", notificationsRoutes);
 // endpoint to get insights
 app.use("/api/v1/insights", insightsRoutes);
 
+// endpoint to get portfolio
+app.use("/api/v1/portfolio", portfolioRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`FinVault API server listening on http://localhost:${PORT}`);
+
+  // app.listen(5000, "0.0.0.0", async () => {
+  //   console.log("Server running on all interfaces");
 
   // Test DB connection
   try {

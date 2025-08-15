@@ -102,8 +102,16 @@ export default function NotificationsScreen() {
                     // <Ionicons name="ellipse" size={10} color="#4D9351" />
                   )}
                 </View>
+                {/* splice message to a single line and add "..." */}
                 <View className="border-b border-gray-200 pb-3 mb-2">
-                  <Text className="text-gray-600 text-lg">{n.message}</Text>
+                  <Text
+                    className="text-gray-600 text-base"
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {n.message}
+                  </Text>
+                  {/* <Text className="text-gray-600 text-lg">{n.message}</Text> */}
                 </View>
                 <View className="flex-row items-center justify-between">
                   <Text className="text-sm text-gray-400 mt-1">

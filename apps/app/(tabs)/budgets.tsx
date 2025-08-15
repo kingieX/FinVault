@@ -138,16 +138,33 @@ export default function BudgetOverviewScreen() {
               className="bg-white p-4 rounded-xl shadow-sm mb-4"
             >
               <View className="flex-row justify-between items-center mb-2">
-                <Text className="font-medium">{cat.name}</Text>
-                <Text className="text-gray-500">
-                  {formatCurrency(cat.spent)} spent of{" "}
-                  {formatCurrency(cat.limit)}
+                <View className="flex-row justify-start items-center mb-2">
+                  <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
+                    <Ionicons
+                      name={(cat.icon || "cash-outline") as any}
+                      size={22}
+                      color="#4D9351"
+                    />
+                  </View>
+                  <Text className="font-medium text-2xl ml-2">{cat.name}</Text>
+                </View>
+
+                <Ionicons name="chevron-forward" size={20} color="#000" />
+              </View>
+              <View className="flex justify-between flex-row items-center px-4 mb-2">
+                <Text className="text-gray-900 text-lg">
+                  {formatCurrency(cat.spent)} spent
+                </Text>
+                <Text className="text-gray-400 text-lg">
+                  of {formatCurrency(cat.limit)}
                 </Text>
               </View>
-              <ProgressBar
-                progress={progress}
-                color={progress >= 1 ? "bg-red-500" : "bg-primary"}
-              />
+              <View className="px-4 mb-2">
+                <ProgressBar
+                  progress={progress}
+                  color={progress >= 1 ? "bg-red-500" : "bg-primary"}
+                />
+              </View>
             </TouchableOpacity>
           );
         })

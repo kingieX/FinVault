@@ -7,31 +7,35 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
-import { getAccounts, getTransactions } from "@/lib/api";
+import { getAccounts, getTransactions, linkAccount } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import { Ionicons } from "@expo/vector-icons";
+import Toast from "react-native-toast-message";
+import LinkAccountModal from "@/components/LinkAccountModal";
 
 export default function AccountsTransactionsScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [modalVisible, setModalVisible] = useState(false);
+
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const accData = await getAccounts();
-        const txnData = await getTransactions();
-        setAccounts(accData || []);
-        setTransactions(txnData || []);
-      } catch (err) {
-        console.error("Error loading accounts/transactions data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchData();
   }, []);
 
+  async function fetchData() {
+    try {
+      const accData = await getAccounts();
+      const txnData = await getTransactions();
+      setAccounts(accData || []);
+      setTransactions(txnData || []);
+    } catch (err) {
+      console.error("Error loading accounts/transactions data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
@@ -102,6 +106,31 @@ export default function AccountsTransactionsScreen() {
           </View>
         ))
       )}
+
+      {/* link account */}
+      <TouchableOpacity
+        className="flex-1 flex-row justify-center bg-primary py-4 rounded-lg items-center"
+        onPress={() => setModalVisible(true)}
+      >
+        <Text className="text-white text-base font-medium">
+          Link Bank Account
+        </Text>
+      </TouchableOpacity>
+
+      <LinkAccountModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSuccess={async (code: any) => {
+          const res = await linkAccount(code);
+          if (res.success) {
+            Toast.show({
+              type: "success",
+              text1: "Account linked successfully",
+            });
+            fetchData(); // reload accounts
+          }
+        }}
+      />
 
       {/* Transactions Section */}
       <Text className="text-2xl font-semibold mt-6 mb-4">Transactions</Text>
