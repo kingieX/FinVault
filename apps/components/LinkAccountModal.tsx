@@ -1,56 +1,33 @@
-import { Modal } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { WebView } from "react-native-webview";
-import { useRef } from "react";
+import { useMonoConnect } from "@mono.co/connect-react-native";
+import { TouchableOpacity, Text } from "react-native";
+import Toast from "react-native-toast-message";
+import { linkAccount } from "@/lib/api";
 
-export default function LinkAccountModal({ visible, onClose, onSuccess }: any) {
-  const MONO_PUBLIC_KEY = "test_pk_tl7dpn4m0a4nrrlolcbk"; // Sandbox key
-  const widgetUrl = `https://connect.mono.co/?key=${MONO_PUBLIC_KEY}&scope=auth,transactions&environment=sandbox`;
-
-  const webViewRef = useRef<any>(null);
-
-  const handleMessage = (event: any) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      console.log("Received message from WebView:", data);
-
-      if (data.type === "mono.connect.success") {
-        const code = data.code;
-        console.log("Mono connect success, code:", code);
-        if (!code) {
-          console.warn("No code received from Mono connect");
-          return;
-        }
-        onSuccess(code); // call API to exchange code
-        onClose(); // close modal immediately
-      } else if (data.type === "mono.connect.closed") {
-        onClose(); // close modal if user cancels
-      }
-    } catch (err) {
-      console.warn("Invalid message from WebView:", event.nativeEvent.data);
-    }
-  };
-
-  const injectedJS = `
-    document.addEventListener("message", function(event) {
-      window.ReactNativeWebView.postMessage(JSON.stringify(event.data));
-    });
-    true;
-  `;
+export default function LinkBankButton({
+  onLinked,
+}: {
+  onLinked?: () => void;
+}) {
+  const mono = useMonoConnect({
+    scope: ["auth", "transactions"], // you can also pass "income" etc if enabled
+    onSuccess: async (data: any) => {
+      await linkAccount(data.code);
+      Toast.show({
+        type: "success",
+        text1: "Account Linked",
+        text2: "Your bank account has been successfully linked.",
+      });
+    },
+  });
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
-        <WebView
-          ref={webViewRef}
-          style={{ flex: 1 }}
-          source={{ uri: widgetUrl }}
-          onMessage={handleMessage}
-          injectedJavaScript={injectedJS}
-          javaScriptEnabled
-          originWhitelist={["*"]}
-        />
-      </SafeAreaView>
-    </Modal>
+    <TouchableOpacity
+      onPress={() => mono.init()} // opens the Mono sheet
+      className="flex-row justify-center bg-primary py-4 rounded-lg items-center"
+    >
+      <Text className="text-white text-base font-medium">
+        Link Bank Account
+      </Text>
+    </TouchableOpacity>
   );
 }

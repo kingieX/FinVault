@@ -6,6 +6,8 @@ import { getToken, deleteToken } from "@/lib/storage";
 import { getCurrentUser } from "@/lib/api";
 import "./global.css";
 
+import { MonoProvider } from "@mono.co/connect-react-native";
+
 import * as Notifications from "expo-notifications";
 
 import Toast, { BaseToast, ErrorToast } from "react-native-toast-message";
@@ -91,36 +93,43 @@ export default function RootLayout() {
   // Stack configuration
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
-        {/* <Stack.Screen name="index" /> */}
-        <Stack.Screen name="welcome" />
-        <Stack.Screen name="signin" />
-        <Stack.Screen name="signup" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="/notifications" />
+      <MonoProvider
+        publicKey="test_pk_tl7dpn4m0a4nrrlolcbk" // your sandbox public key
+        onEvent={(evt) => console.log("Mono event:", evt)}
+        onClose={() => console.log("Mono closed")}
+        onSuccess={(data) => console.log("Mono success:", data)}
+      >
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* <Stack.Screen name="index" /> */}
+          <Stack.Screen name="welcome" />
+          <Stack.Screen name="signin" />
+          <Stack.Screen name="signup" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="/notifications" />
 
-        <Stack.Screen name="/profile" />
-      </Stack>
-      <Toast
-        config={{
-          success: (props) => (
-            <BaseToast
-              {...props}
-              style={{ borderLeftColor: "#4D9351" }}
-              text1Style={{ fontSize: 16, fontWeight: "bold" }}
-              text2Style={{ fontSize: 15, fontWeight: "semibold" }}
-            />
-          ),
-          error: (props) => (
-            <ErrorToast
-              {...props}
-              style={{ borderLeftColor: "red" }}
-              text1Style={{ fontSize: 16, fontWeight: "bold" }}
-              text2Style={{ fontSize: 15, fontWeight: "semibold" }}
-            />
-          ),
-        }}
-      />
+          <Stack.Screen name="/profile" />
+        </Stack>
+        <Toast
+          config={{
+            success: (props) => (
+              <BaseToast
+                {...props}
+                style={{ borderLeftColor: "#4D9351" }}
+                text1Style={{ fontSize: 16, fontWeight: "bold" }}
+                text2Style={{ fontSize: 15, fontWeight: "semibold" }}
+              />
+            ),
+            error: (props) => (
+              <ErrorToast
+                {...props}
+                style={{ borderLeftColor: "red" }}
+                text1Style={{ fontSize: 16, fontWeight: "bold" }}
+                text2Style={{ fontSize: 15, fontWeight: "semibold" }}
+              />
+            ),
+          }}
+        />
+      </MonoProvider>
     </>
   );
 }

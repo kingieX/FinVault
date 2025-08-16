@@ -1,24 +1,14 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import { getAccounts, getTransactions, linkAccount } from "@/lib/api";
+import { View, Text, ScrollView, ActivityIndicator, Image } from "react-native";
+import { getAccounts, getTransactions } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import { Ionicons } from "@expo/vector-icons";
-import Toast from "react-native-toast-message";
-import LinkAccountModal from "@/components/LinkAccountModal";
+import LinkBankButton from "@/components/LinkAccountModal";
 
 export default function AccountsTransactionsScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -75,14 +65,6 @@ export default function AccountsTransactionsScreen() {
               Your data is secure and encrypted.
             </Text>
           </View>
-          <TouchableOpacity
-            className="bg-primary px-6 w-full py-4 rounded-lg"
-            onPress={() => setModalVisible(true)}
-          >
-            <Text className="text-white text-center font-semibold text-base">
-              Connect Account
-            </Text>
-          </TouchableOpacity>
         </View>
       ) : (
         accounts.map((acc) => (
@@ -107,53 +89,8 @@ export default function AccountsTransactionsScreen() {
         ))
       )}
 
-      {/* link account */}
-      {/* <TouchableOpacity
-        className="flex-1 flex-row justify-center bg-primary py-4 rounded-lg items-center"
-        onPress={() => setModalVisible(true)}
-      >
-        <Text className="text-white text-base font-medium">
-          Link Bank Account
-        </Text>
-      </TouchableOpacity> */}
-      <TouchableOpacity
-        className="bg-primary px-6 w-full py-4 rounded-lg"
-        onPress={() => setModalVisible(true)}
-      >
-        <Text className="text-white text-center font-semibold text-base">
-          Connect Account
-        </Text>
-      </TouchableOpacity>
-
       {/* Link Account Modal */}
-      <LinkAccountModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSuccess={async (code: string) => {
-          try {
-            const res = await linkAccount(code);
-            if (res.success) {
-              Toast.show({
-                type: "success",
-                text1: "Account linked successfully",
-              });
-              fetchData();
-              setModalVisible(false);
-            } else {
-              Toast.show({
-                type: "error",
-                text1: res.error || "Failed to link account",
-              });
-            }
-          } catch (err) {
-            console.error("Error linking account:", err);
-            Toast.show({
-              type: "error",
-              text1: "Server error while linking account",
-            });
-          }
-        }}
-      />
+      <LinkBankButton onLinked={fetchData} />
 
       {/* Transactions Section */}
       <Text className="text-2xl font-semibold mt-6 mb-4">Transactions</Text>
