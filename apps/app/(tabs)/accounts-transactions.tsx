@@ -125,6 +125,7 @@ export default function AccountsTransactionsScreen() {
         </Text>
       </TouchableOpacity>
 
+      {/* Link Account Modal */}
       <LinkAccountModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}

@@ -13,7 +13,7 @@ export async function exchangeMonoCode(req: Request, res: Response) {
 
   try {
     const response = await axios.post(
-      "https://api.withmono.com/account/auth",
+      "https://api.withmono.com/v2/accounts/auth",
       { code },
       { headers: { "mono-sec-key": MONO_SECRET_KEY } }
     );

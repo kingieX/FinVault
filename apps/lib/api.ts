@@ -72,6 +72,7 @@ export async function getAccounts() {
 // Function to link account
 export async function linkAccount(code: string) {
   const token = await getToken("token");
+
   const res = await fetch(`${API_URL}/accounts/link-account`, {
     method: "POST",
     headers: {
@@ -80,7 +81,14 @@ export async function linkAccount(code: string) {
     },
     body: JSON.stringify({ code }),
   });
-  return res.json();
+
+  const data = await res.json();
+
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || "Failed to link account");
+  }
+
+  return data;
 }
 
 // ##--transaction functions--

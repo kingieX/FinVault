@@ -40,7 +40,8 @@ export async function monoWebhook(req: Request, res: Response) {
     try {
       // Fetch latest transactions from Mono API
       const txRes = await axios.get(
-        `https://api.withmono.com/accounts/${accountId}/transactions`,
+        `https://api.withmono.com/v2/accounts/${accountId}/transactions`,
+        // https://api.withmono.com/v2/accounts/{id}/transactions
         {
           headers: {
             "mono-sec-key": MONO_SECRET_KEY,
