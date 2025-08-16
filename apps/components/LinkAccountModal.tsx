@@ -4,7 +4,7 @@ import { WebView } from "react-native-webview";
 import { useRef, useEffect } from "react";
 
 export default function LinkAccountModal({ visible, onClose, onSuccess }: any) {
-  const MONO_PUBLIC_KEY = "test_pk_rqui347hfbx0rswd5z1u"; // Sandbox key
+  const MONO_PUBLIC_KEY = "test_pk_tl7dpn4m0a4nrrlolcbk"; // Sandbox key
   const widgetUrl = `https://connect.mono.co/?key=${MONO_PUBLIC_KEY}&scope=auth,transactions&environment=sandbox`;
 
   const webViewRef = useRef<any>(null);

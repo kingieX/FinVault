@@ -27,7 +27,8 @@ export async function exchangeMonoCode(req: Request, res: Response) {
     }
 
     const accountId = response.data?.id;
-    const authToken = response.data?.auth_token;
+    // Mono sometimes returns `auth_token`, sometimes `token`
+    const authToken = response.data?.auth_token || response.data?.token;
 
     if (!accountId || !authToken) {
       console.error("Mono response missing accountId/authToken", response.data);
