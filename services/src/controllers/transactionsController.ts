@@ -15,10 +15,11 @@ export async function getTransactions(req: Request, res: Response) {
         t.amount,
         t.date,
         t.created_at,
-        a.name AS account_name,
-        a.type AS account_type
+        la.account_name,
+        la.type AS account_type,
+        la.institution_name
       FROM transactions t
-      JOIN accounts a ON t.account_id = a.id
+      JOIN linked_accounts la ON t.account_id = la.account_id
       WHERE t.user_id = $1
       ORDER BY t.date DESC
       `,

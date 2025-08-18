@@ -19,19 +19,20 @@ export async function getOrCreateMonoCustomer(req: Request, res: Response) {
     const user = userRes.rows[0];
 
     // If we already saved a mono_customer_id, reuse it
-    if (user.mono_customer_id) {
-      return res.json({ customerId: user.mono_customer_id });
-    }
+    // if (user.mono_customer_id) {
+    //   return res.json({ customerId: user.mono_customer_id });
+    // }
 
     // Otherwise, call Mono API to initiate account linking
     const resp = await axios.post(
       "https://api.withmono.com/v2/accounts/initiate",
       {
         customer: {
-          name: user.name,
-          email: user.email,
+          name: user.name || `Sandbox User ${userId}`,
+          email: user.email || `sandbox_${userId}@example.com`,
         },
         scope: "auth",
+        redirect_url: "https://mono.co", // 👈 required field
         meta: { ref: `user_${userId}_${Date.now()}` },
       },
       {
@@ -44,17 +45,17 @@ export async function getOrCreateMonoCustomer(req: Request, res: Response) {
     );
 
     const customerId = resp.data?.data?.customer || resp.data?.customer;
-    console.log("Mono customer ID:", resp.data);
+    // console.log("Mono customer ID:", resp.data);
     if (!customerId) {
       console.error("Invalid initiate response", resp.data);
       return res.status(500).json({ error: "Failed to create Mono customer" });
     }
 
     // Save to users table
-    await pool.query("UPDATE users SET mono_customer_id=$1 WHERE id=$2", [
-      customerId,
-      userId,
-    ]);
+    // await pool.query("UPDATE users SET mono_customer_id=$1 WHERE id=$2", [
+    //   customerId,
+    //   userId,
+    // ]);
 
     return res.json({ customerId });
   } catch (err: any) {

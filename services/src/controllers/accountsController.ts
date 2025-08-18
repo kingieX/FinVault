@@ -5,15 +5,61 @@ import { pool } from "../lib/db";
 const MONO_SECRET_KEY = process.env.MONO_SECRET_KEY!;
 
 export async function listLinkedAccounts(req: Request, res: Response) {
-  const userId = (req as any).user.id;
-  const { rows } = await pool.query(
-    `SELECT account_id, institution_name, type, name, currency, balance, updated_at
-     FROM linked_accounts
-     WHERE user_id = $1
-     ORDER BY updated_at DESC`,
-    [userId]
-  );
-  res.json(rows);
+  try {
+    const userId = (req as any).user.id;
+
+    const { rows } = await pool.query(
+      `
+      SELECT 
+        la.account_id,
+        la.account_name,
+        la.institution_name,
+        la.account_number,
+        la.type,
+        la.currency,
+        la.balance,
+        la.updated_at,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', t.id,
+              'description', t.description,
+              'amount', t.amount,
+              'date', t.date,
+              'category', t.category
+            )
+            ORDER BY t.date DESC
+          ) FILTER (WHERE t.id IS NOT NULL),
+          '[]'
+        ) AS recent_transactions
+      FROM linked_accounts la
+      LEFT JOIN LATERAL (
+        SELECT *
+        FROM transactions t
+        WHERE t.account_id = la.account_id AND t.user_id = $1
+        ORDER BY t.date DESC
+        LIMIT 5
+      ) t ON TRUE
+      WHERE la.user_id = $1
+      GROUP BY 
+        la.account_id,
+        la.account_name,
+        la.institution_name,
+        la.account_number,
+        la.type,
+        la.currency,
+        la.balance,
+        la.updated_at
+      ORDER BY la.updated_at DESC
+      `,
+      [userId]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching accounts with transactions:", err);
+    res.status(500).json({ error: "Failed to fetch accounts" });
+  }
 }
 
 export async function listUserTransactions(req: Request, res: Response) {
@@ -48,7 +94,7 @@ export async function exchangeMonoCode(req: Request, res: Response) {
     );
 
     const accountId = authResp.data?.data?.id || authResp.data?.id;
-    console.log("Mono account ID:", accountId);
+    // console.log("Mono account ID:", accountId);
     if (!accountId) {
       console.error("Invalid /v2/accounts/auth response", authResp.data);
       return res.status(500).json({ error: "Invalid response from Mono" });
@@ -65,7 +111,7 @@ export async function exchangeMonoCode(req: Request, res: Response) {
       }
     );
     const acct = acctResp.data?.data?.account || acctResp.data?.account;
-    console.log("Mono account details:", acct);
+    // console.log("Mono account details:", acct);
 
     // 3) Fetch balance
     const balResp = await axios.get(
@@ -80,26 +126,35 @@ export async function exchangeMonoCode(req: Request, res: Response) {
     const balance =
       balResp.data?.data?.balance ?? balResp.data?.balance ?? null;
 
-    console.log("Mono account balance:", balance);
+    // console.log("Mono account balance:", balance);
 
     // 4) Upsert linked account
     await pool.query(
       `INSERT INTO linked_accounts
-        (user_id, account_id, institution_name, account_name, account_number, currency, balance, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
-       ON CONFLICT (account_id)
-       DO UPDATE SET institution_name=EXCLUDED.institution_name,
-                     account_name=EXCLUDED.account_name,
-                     account_number=EXCLUDED.account_number,
-                     currency=EXCLUDED.currency,
-                     balance=EXCLUDED.balance,
-                     updated_at=NOW()`,
+    (user_id, account_id, institution_name, institution_code, institution_type,
+     account_name, account_number, type, bvn, currency, balance, updated_at)
+   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())
+   ON CONFLICT (account_id)
+   DO UPDATE SET institution_name   = EXCLUDED.institution_name,
+                 institution_code   = EXCLUDED.institution_code,
+                 institution_type   = EXCLUDED.institution_type,
+                 account_name       = EXCLUDED.account_name,
+                 account_number     = EXCLUDED.account_number,
+                 type               = EXCLUDED.type,
+                 bvn                = EXCLUDED.bvn,
+                 currency           = EXCLUDED.currency,
+                 balance            = EXCLUDED.balance,
+                 updated_at         = NOW()`,
       [
         userId,
         accountId,
         acct?.institution?.name || null,
+        acct?.institution?.bank_code || null,
+        acct?.institution?.type || null,
         acct?.name || null,
         acct?.account_number || null,
+        acct?.type || null,
+        acct?.bvn || null,
         acct?.currency || null,
         balance,
       ]
@@ -117,27 +172,27 @@ export async function exchangeMonoCode(req: Request, res: Response) {
     );
 
     const txs = txResp.data?.data || [];
-    console.log("Mono transactions:", txs);
+    // console.log("Mono transactions:", txs);
     if (Array.isArray(txs)) {
       for (const t of txs) {
         await pool.query(
           `INSERT INTO transactions
-            (user_id, account_id, mono_tx_id, narration, amount, type, balance_after, category, date, source)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'linked_account')
-           ON CONFLICT (mono_tx_id) DO NOTHING`,
+        (user_id, account_id, mono_tx_id, description, amount, type, balance_after, category, currency, date, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'linked_account')
+       ON CONFLICT (mono_tx_id) DO NOTHING`,
           [
             userId,
             accountId,
-            t.id,
-            t.narration,
-            // store debit as negative, credit as positive (optional)
+            t.id, // mono_tx_id
+            t.narration, // description
             t.type === "debit"
               ? -Math.abs(Number(t.amount))
-              : Math.abs(Number(t.amount)),
-            t.type,
-            t.balance ?? null,
-            t.category ?? null,
-            t.date,
+              : Math.abs(Number(t.amount)), // amount signed properly
+            t.type, // type
+            t.balance ?? null, // balance_after
+            t.category ?? null, // category
+            t.currency ?? null, // currency
+            t.date, // date
           ]
         );
       }

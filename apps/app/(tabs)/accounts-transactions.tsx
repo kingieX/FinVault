@@ -7,7 +7,7 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { getAccounts, getMonoCustomer, getTransactions } from "@/lib/api";
+import { getAccounts, getTransactions } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import { Ionicons } from "@expo/vector-icons";
 import { MonoProvider, useMonoConnect } from "@mono.co/connect-react-native";
@@ -63,10 +63,10 @@ export default function AccountsTransactionsScreen() {
     }
   }
 
-  if (loading || !customerId) {
+  if (loading && !customerId) {
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" className="text-primary" />
       </View>
     );
   }
@@ -93,7 +93,7 @@ export default function AccountsTransactionsScreen() {
     onSuccess: async (data: any) => {
       try {
         const code = await data.getAuthCode();
-        console.log("Mono auth code:", code);
+        // console.log("Mono auth code:", code);
         if (!code) {
           Toast.show({
             type: "error",
@@ -178,23 +178,44 @@ export default function AccountsTransactionsScreen() {
           accounts.map((acc, idx) => (
             <View
               key={acc.account_id || `acc-${idx}`}
-              className="bg-white p-4 rounded-xl shadow mb-4 flex-row justify-between items-center border border-gray-100"
+              className="bg-white p-4 rounded-xl shadow mb-4 border border-gray-100"
             >
-              <View>
-                <Text className="font-semibold text-lg">
-                  {acc.account_name || "Account"}
-                </Text>
-                <Text className="text-gray-500 text-sm capitalize">
-                  {acc.institution_name || "Unknown Institution"}
-                </Text>
+              <View className="flex justify-between items-">
+                <View className="flex gap-2">
+                  <View className="flex-row items-center gap-2">
+                    <Ionicons
+                      name={
+                        acc.type !== "savings" ? "wallet" : "wallet-outline"
+                      }
+                      size={20}
+                      color="#4D9351"
+                    />
+                    <Text className="text-gray-500 text-sm">
+                      {acc.type || "Unknown Type"}
+                    </Text>
+                  </View>
+                  <Text
+                    className={`text-3xl font-bold ${
+                      acc.balance < 0 ? "text-red-500" : "text-green-600"
+                    }`}
+                  >
+                    {formatCurrency(acc.balance || 0)}
+                  </Text>
+                </View>
+                <View className="flex-row gap-2 items-center mt-2">
+                  {/* <Text className="font-semibold text-lg">
+                    {acc.account_name || "Account"}
+                  </Text> */}
+                  <Text className="text-gray-500 text-lg capitalize">
+                    {acc.institution_name || "Unknown Institution"}
+                  </Text>
+                  {acc.account_number && (
+                    <Text className="text-gray-400 text-sm">
+                      ••••{acc.account_number.slice(-4)}
+                    </Text>
+                  )}
+                </View>
               </View>
-              <Text
-                className={`text-lg font-bold ${
-                  acc.balance < 0 ? "text-red-500" : "text-green-600"
-                }`}
-              >
-                {formatCurrency(acc.balance || 0)}
-              </Text>
             </View>
           ))
         )}
@@ -217,28 +238,31 @@ export default function AccountsTransactionsScreen() {
           </View>
         ) : (
           Object.keys(grouped).map((date) => (
-            <View key={date} className="mb-6">
-              <Text className="text-gray-500 font-medium mb-3">{date}</Text>
+            <View key={date} className="mb-3">
+              <Text className="text-gray-500 font-medium mb-2">{date}</Text>
               {grouped[date].map((tx: any, idx: number) => (
                 <View
-                  key={tx.mono_tx_id || tx.id || `tx-${idx}`}
+                  key={tx.id || `tx-${idx}`}
                   className="bg-white p-4 rounded-xl shadow mb-3 flex-row justify-between border border-gray-100"
                 >
-                  <View>
+                  <View className="flex-1 flex-col justify-center gap-1">
                     <Text className="font-medium">{tx.description}</Text>
-                    <Text className="text-gray-500 text-sm">
-                      {tx.category || tx.type}
+                    {/* <Text className="text-gray-500 text-sm">
+                      {tx.category ||
+                        tx.account_name ||
+                        tx.account_type ||
+                        "Uncategorized"}
+                    </Text> */}
+                    <Text
+                      className={`font-semibold ${
+                        tx.amount < 0 ? "text-red-500" : "text-green-600"
+                      }`}
+                    >
+                      {tx.amount < 0
+                        ? `- ${formatCurrency(Math.abs(tx.amount))}`
+                        : formatCurrency(tx.amount)}
                     </Text>
                   </View>
-                  <Text
-                    className={`font-semibold ${
-                      tx.amount < 0 ? "text-red-500" : "text-green-600"
-                    }`}
-                  >
-                    {tx.amount < 0
-                      ? `- ${formatCurrency(Math.abs(tx.amount))}`
-                      : formatCurrency(tx.amount)}
-                  </Text>
                 </View>
               ))}
             </View>
