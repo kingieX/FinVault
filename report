@@ -1,0 +1,308 @@
+1️⃣ Notifications system
+Core use case #4 in your doc is:
+
+Receiving AI-generated alerts like "You overspent on dining this week"
+
+So we should now:
+
+Create an API endpoint /notifications that returns:
+
+unread and read notifications
+
+type (alert, tip, system)
+
+timestamp, message, related screen link
+
+In the frontend:
+
+Add a Notification screen accessible from the top-right bell icon on all tabs
+
+Show badge count for unread notifications
+
+Allow marking notifications as read
+
+2️⃣ AI insights integration
+Build backend logic to generate spending insights from transaction history
+
+Connect to OpenAI API or custom rules engine
+
+Show these insights on Home and in Notifications
+
+3️⃣ Portfolio tracking tab
+For core use case #5:
+
+Viewing portfolio trends based on stock or crypto holdings
+
+Backend:
+
+Portfolio table
+
+API to fetch holdings from integration (mock or Plaid + Yahoo Finance/Coingecko)
+
+Frontend:
+
+Display holdings, % change, charts
+
+Group by asset type
+
+4️⃣ Account linking (Plaid )
+Implement Plaid Link in mobile app
+
+Connect linked account to backend for automatic transaction sync
+
+5️⃣ Settings/Profile screen
+Allow updating name, email, password
+
+Manage notification preferences
+
+Logout
+
+we might be doing some things wrongly. on their docs, we have three request for authorisation which are
+
+1. Initiate Account Linking: This resource is to initiate linking an account.
+   Route: "https://api.withmono.com/v2/accounts/initiate"
+   Request code example: "const axios = require("axios");
+
+const options = {
+method: "POST",
+url: "https://api.withmono.com/v2/accounts/initiate",
+headers: {
+accept: "application/json",
+"content-type": "application/json",
+"mono-sec-key": "string",
+},
+data: {
+customer: {
+name: "Samuel Olamide",
+email: "samuel@neem.com",
+},
+meta: { ref: "99008877TEST" },
+scope: "auth",
+redirect_url: "https://mono.co",
+},
+};
+
+axios
+.request(options)
+.then(function (response) {
+console.log(response.data);
+})
+.catch(function (error) {
+console.error(error);
+}); "
+response code example: "{
+"status": "successful",
+"message": "Request was successfully completed",
+"timestamp": "2024-03-18T11:51:41.624Z",
+"data": {
+"mono_url": "https://link.mono.co/ALGSTO222222WE",
+"customer": "65f82acd00000003aa9028d",
+"meta": {
+"ref": "99008877TEST"
+},
+"scope": "auth",
+"institution": {},
+"redirect_url": "https://mono.co",
+"is_multi": false,
+"created_at": "2024-03-18T11:51:41.605Z"
+}
+}
+"
+
+2. Exchange Token: Use this endpoint to request an account ID (that identifies the authenticated account) after successful enrolment on the Mono Connect widget.
+   route: "https://api.withmono.com/v2/accounts/auth"
+   Request code example: "const axios = require("axios");
+
+const options = {
+method: "POST",
+url: "https://api.withmono.com/v2/accounts/auth",
+headers: { accept: "application/json", "Content-Type": "application/json" },
+data: { code: "string" },
+};
+
+axios
+.request(options)
+.then(function (response) {
+console.log(response.data);
+})
+.catch(function (error) {
+console.error(error);
+}); "
+Response code example: "{
+"status": "successful",
+"message": "Request was successfully completed",
+"timestamp": "2024-04-15T18:45:15.371Z",
+"data": {
+"id": "661d759280dbf646242634cc"
+}
+} "
+
+3. Account Reauthorisation: Use this endpoint to reauthorise a previously linked account
+
+Route: "https://api.withmono.com/v2/accounts/initiate"
+Request code example: "curl --request POST \
+ --url https://api.withmono.com/v2/accounts/initiate \
+ --header 'Content-Type: application/json' \
+ --header 'accept: application/json' \
+ --header 'mono-sec-key: string' \
+ --data '{
+"meta": { "ref": "099777"},
+"scope": "reauth",
+"account": "65c4c03aa66a95b572cb5a86",
+"redirect_url": "https://mono.co"
+}' "
+Response: "{
+"status": "successful",
+"message": "Request was successfully completed",
+"timestamp": "2025-05-21T13:51:40.920Z",
+"data": {
+"mono_url": "https://link.mono.co/ALH0IX10JO89",
+"customer": "682fd53a74682beb490a0ed4",
+"account": "682dw53b74682beb490a0ed6",
+"meta": {
+"ref": "qazwsxtesting123"
+},
+"scope": "reauth",
+"institution": {
+"id": "5f2d08c060b92e288828770b",
+"auth_method": "60d071adf73e6468062ae92a"
+},
+"redirect_url": "https://mono.co",
+"is_multi": false,
+"created_at": "2025-05-21T13:51:40.912Z"
+}
+} "
+
+For getting account details and transactions, we make use of these:
+
+1. Account Details: This resource represents the account details with the financial institution.
+   Route: "https://api.withmono.com/v2/accounts/{id}"
+   request code: "const axios = require("axios");
+
+const options = {
+method: "GET",
+url: "https://api.withmono.com/v2/accounts/id",
+headers: { accept: "application/json" },
+};
+
+axios
+.request(options)
+.then(function (response) {
+console.log(response.data);
+})
+.catch(function (error) {
+console.error(error);
+}); "
+Response: "{
+"status": "successful",
+"message": "Request was successfully completed",
+"timestamp": "2024-04-12T06:31:02.289Z",
+"data": {
+"account": {
+"id": "64779d900000000000b3de23aeb8",
+"name": "Samuel Olamide Nomo",
+"currency": "NGN",
+"type": "Digital Savings Account",
+"account_number": "1234567890",
+"balance": 333064,
+"bvn": "0065",
+"institution": {
+"name": "GTBank",
+"bank_code": "058",
+"type": "PERSONAL_BANKING"
+}
+},
+"customer": {
+"id": "682dd53a74682beb490a0ed4"
+},
+"meta": {
+"data_status": "AVAILABLE",
+"auth_method": "internet_banking"
+}
+}
+} "
+
+2. Account Balance: This resource provides the account balance of the user
+
+Route: "https://api.withmono.com/v2/accounts/{id}/balance"
+Request code: "const axios = require("axios");
+
+const options = {
+method: "GET",
+url: "https://api.withmono.com/v2/accounts/id/balance",
+headers: { accept: "application/json" },
+};
+
+axios
+.request(options)
+.then(function (response) {
+console.log(response.data);
+})
+.catch(function (error) {
+console.error(error);
+}); "
+response: "
+{
+"status": "successful",
+"message": "Request was successfully completed",
+"timestamp": "2024-05-22T06:44:42.884Z",
+"data": {
+"id": "61e54d400000007510073257",
+"name": "SAMUEL OLAMIDE NOMO",
+"account_number": "01000005899",
+"balance": 35232,
+"currency": "NGN"
+}
+} "
+
+3. Transactions: This resource represents the known transactions on the account.
+   Route: "https://api.withmono.com/v2/accounts/{id}/transactions"
+   Request code: "const axios = require('axios');
+
+const options = {
+method: 'GET',
+url: 'https://api.withmono.com/v2/accounts/id/transactions',
+headers: {accept: 'application/json'}
+};
+
+axios
+.request(options)
+.then(function (response) {
+console.log(response.data);
+})
+.catch(function (error) {
+console.error(error);
+}); "
+Response: "{
+"status": "successful",
+"message": "Transaction retrieved successfully",
+"timestamp": "2024-04-12T06:18:17.117Z",
+"data": [
+{
+"id": "66141bbff58d2687e7d91234",
+"narration": "PG00001",
+"amount": 500,
+"type": "debit",
+"balance": 1500,
+"date": "2023-12-14T00:02:00.500Z",
+"category": "unknown"
+},
+{
+"id": "66141bbff58d2687e7d91235",
+"narration": "0000132312091322123456789012345 NIP TRANSFER",
+"amount": 1000,
+"type": "debit",
+"balance": 2000,
+"date": "2023-12-09T13:23:00.100Z",
+"category": "bank_charges"
+},
+],
+"meta": {
+"total": 307,
+"page": 1,
+"previous": null,
+"next": "https://api.withmono.com/v2/66141b98aaa34e17e8cfdb76/transactions?page=2"
+}
+} "
+
+With the following information provided, can you modify all changes required in order to make this work from the database tables, backed endpoints and frontend so that the system works perfectly

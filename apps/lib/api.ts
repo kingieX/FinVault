@@ -5,8 +5,8 @@ import { saveToken, getToken } from "@/lib/storage";
 // and look for the address under your active network connection (e.g., Wi-Fi or Ethernet)
 
 // const API_URL = "http://localhost:5000/api/v1";
-// const API_URL = "http://172.20.10.3:5000/api/v1";
-const API_URL = "https://finvault-service.onrender.com/api/v1"; // Use this for production
+const API_URL = "http://172.20.10.3:5000/api/v1";
+// const API_URL = "https://finvault-service.onrender.com/api/v1"; // Use this for production
 
 // ##--authentication functions--
 
@@ -51,6 +51,22 @@ export async function getCurrentUser() {
   } catch (err) {
     console.error("Failed to fetch current user:", err);
     return null;
+  }
+}
+
+// Function to get Mono customer ID
+export async function getMonoCustomer() {
+  const token = await getToken("token");
+  if (!token) throw new Error("No token found");
+
+  try {
+    const res = await axios.get(`${API_URL}/users/mono-customer`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.customerId;
+  } catch (err) {
+    console.error("Failed to fetch Mono customer ID:", err);
+    throw err;
   }
 }
 

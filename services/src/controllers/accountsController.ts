@@ -1,104 +1,252 @@
 import { Request, Response } from "express";
-import { pool } from "../lib/db";
 import axios from "axios";
+import { pool } from "../lib/db";
 
-const MONO_SECRET_KEY = process.env.MONO_SECRET_KEY;
+const MONO_SECRET_KEY = process.env.MONO_SECRET_KEY!;
 
-// Function to exchange monoCode
+export async function listLinkedAccounts(req: Request, res: Response) {
+  const userId = (req as any).user.id;
+  const { rows } = await pool.query(
+    `SELECT account_id, institution_name, type, name, currency, balance, updated_at
+     FROM linked_accounts
+     WHERE user_id = $1
+     ORDER BY updated_at DESC`,
+    [userId]
+  );
+  res.json(rows);
+}
+
+export async function listUserTransactions(req: Request, res: Response) {
+  const userId = (req as any).user.id;
+  const { rows } = await pool.query(
+    `SELECT * FROM transactions
+     WHERE user_id = $1
+     ORDER BY date DESC
+     LIMIT 500`,
+    [userId]
+  );
+  res.json(rows);
+}
+
 export async function exchangeMonoCode(req: Request, res: Response) {
   const { code } = req.body;
   const userId = (req as any).user.id;
-
   if (!code) return res.status(400).json({ error: "Missing code" });
 
   try {
-    const response = await axios.post(
+    // 1) Exchange code for account id
+    const authResp = await axios.post(
       "https://api.withmono.com/v2/accounts/auth",
       { code },
-      { headers: { "mono-sec-key": MONO_SECRET_KEY } }
+      {
+        headers: {
+          "mono-sec-key": MONO_SECRET_KEY,
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+      }
     );
 
-    // Debug log in sandbox mode
-    if (process.env.MONO_ENVIRONMENT === "sandbox") {
-      console.log(
-        "Mono exchange response:",
-        JSON.stringify(response.data, null, 2)
-      );
-    }
-
-    const accountId = response.data?.id;
-    // Mono sometimes returns `auth_token`, sometimes `token`
-    const authToken = response.data?.auth_token || response.data?.token;
-
-    if (!accountId || !authToken) {
-      console.error("Mono response missing accountId/authToken", response.data);
+    const accountId = authResp.data?.data?.id || authResp.data?.id;
+    console.log("Mono account ID:", accountId);
+    if (!accountId) {
+      console.error("Invalid /v2/accounts/auth response", authResp.data);
       return res.status(500).json({ error: "Invalid response from Mono" });
     }
 
+    // 2) Fetch account details
+    const acctResp = await axios.get(
+      `https://api.withmono.com/v2/accounts/${accountId}`,
+      {
+        headers: {
+          "mono-sec-key": MONO_SECRET_KEY,
+          accept: "application/json",
+        },
+      }
+    );
+    const acct = acctResp.data?.data?.account || acctResp.data?.account;
+    console.log("Mono account details:", acct);
+
+    // 3) Fetch balance
+    const balResp = await axios.get(
+      `https://api.withmono.com/v2/accounts/${accountId}/balance`,
+      {
+        headers: {
+          "mono-sec-key": MONO_SECRET_KEY,
+          accept: "application/json",
+        },
+      }
+    );
+    const balance =
+      balResp.data?.data?.balance ?? balResp.data?.balance ?? null;
+
+    console.log("Mono account balance:", balance);
+
+    // 4) Upsert linked account
     await pool.query(
-      `INSERT INTO linked_accounts (user_id, account_id, access_token)
-       VALUES ($1, $2, $3)
+      `INSERT INTO linked_accounts
+        (user_id, account_id, institution_name, account_name, account_number, currency, balance, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
        ON CONFLICT (account_id)
-       DO UPDATE SET access_token = EXCLUDED.access_token, updated_at = NOW()`,
-      [userId, accountId, authToken]
+       DO UPDATE SET institution_name=EXCLUDED.institution_name,
+                     account_name=EXCLUDED.account_name,
+                     account_number=EXCLUDED.account_number,
+                     currency=EXCLUDED.currency,
+                     balance=EXCLUDED.balance,
+                     updated_at=NOW()`,
+      [
+        userId,
+        accountId,
+        acct?.institution?.name || null,
+        acct?.name || null,
+        acct?.account_number || null,
+        acct?.currency || null,
+        balance,
+      ]
     );
 
-    res.json({ success: true, accountId });
-  } catch (err: any) {
-    console.error(
-      "Error exchanging Mono code:",
-      err.response?.data || err.message
+    // 5) Initial transactions sync (page 1 only here; extend as needed)
+    const txResp = await axios.get(
+      `https://api.withmono.com/v2/accounts/${accountId}/transactions`,
+      {
+        headers: {
+          "mono-sec-key": MONO_SECRET_KEY,
+          accept: "application/json",
+        },
+      }
     );
-    res.status(500).json({ error: "Failed to link account" });
+
+    const txs = txResp.data?.data || [];
+    console.log("Mono transactions:", txs);
+    if (Array.isArray(txs)) {
+      for (const t of txs) {
+        await pool.query(
+          `INSERT INTO transactions
+            (user_id, account_id, mono_tx_id, narration, amount, type, balance_after, category, date, source)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'linked_account')
+           ON CONFLICT (mono_tx_id) DO NOTHING`,
+          [
+            userId,
+            accountId,
+            t.id,
+            t.narration,
+            // store debit as negative, credit as positive (optional)
+            t.type === "debit"
+              ? -Math.abs(Number(t.amount))
+              : Math.abs(Number(t.amount)),
+            t.type,
+            t.balance ?? null,
+            t.category ?? null,
+            t.date,
+          ]
+        );
+      }
+    }
+
+    return res.json({ success: true, accountId });
+  } catch (err: any) {
+    console.error("exchangeMonoCode error:", err?.response?.data || err);
+    return res.status(500).json({ error: "Failed to link account" });
   }
 }
 
-// Function to get all accounts with their recent transactions
+// OPTIONAL: build a reauth link for an existing account
+export async function initiateReauth(req: Request, res: Response) {
+  const { accountId, redirect_url } = req.body;
+  if (!accountId) return res.status(400).json({ error: "Missing accountId" });
+
+  try {
+    const resp = await axios.post(
+      "https://api.withmono.com/v2/accounts/initiate",
+      {
+        scope: "reauth",
+        account: accountId,
+        redirect_url: redirect_url || "https://mono.co",
+        meta: { ref: `reauth_${accountId}_${Date.now()}` },
+      },
+      {
+        headers: {
+          "mono-sec-key": MONO_SECRET_KEY,
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+      }
+    );
+
+    const mono_url = resp.data?.data?.mono_url || resp.data?.mono_url;
+    return res.json({ mono_url });
+  } catch (err: any) {
+    console.error("initiateReauth error:", err?.response?.data || err);
+    return res.status(500).json({ error: "Failed to initiate reauth" });
+  }
+}
+
+// Fetch all linked accounts for logged-in user
 export async function getAccounts(req: Request, res: Response) {
   try {
     const userId = (req as any).user.id;
 
-    // Fetch accounts
-    const accountsResult = await pool.query(
-      `
-      SELECT id, name, type, balance, created_at
-      FROM accounts
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      `,
+    const result = await pool.query(
+      `SELECT account_id, balance, created_at, updated_at
+       FROM linked_accounts
+       WHERE user_id = $1`,
       [userId]
     );
 
-    const accounts = accountsResult.rows;
-
-    // Fetch recent transactions for all accounts
-    const transactionsResult = await pool.query(
-      `
-      SELECT 
-        t.id,
-        t.account_id,
-        t.description,
-        t.category,
-        t.amount,
-        t.date
-      FROM transactions t
-      WHERE t.user_id = $1
-      ORDER BY t.date DESC
-      `,
-      [userId]
-    );
-
-    // Attach transactions to their respective account
-    const accountsWithTx = accounts.map((account: any) => ({
-      ...account,
-      recent_transactions: transactionsResult.rows
-        .filter((tx) => tx.account_id === account.id)
-        .slice(0, 5), // only latest 5
-    }));
-
-    res.json(accountsWithTx);
+    res.json(result.rows);
   } catch (err) {
     console.error("Error fetching accounts:", err);
     res.status(500).json({ error: "Failed to fetch accounts" });
   }
 }
+
+// Function to get all accounts with their recent transactions
+
+// export async function getAccounts(req: Request, res: Response) {
+//   try {
+//     const userId = (req as any).user.id;
+
+//     // Fetch accounts
+//     const accountsResult = await pool.query(
+//       `
+//       SELECT id, name, type, balance, created_at
+//       FROM accounts
+//       WHERE user_id = $1
+//       ORDER BY created_at DESC
+//       `,
+//       [userId]
+//     );
+
+//     const accounts = accountsResult.rows;
+
+// Fetch recent transactions for all accounts
+//     const transactionsResult = await pool.query(
+//       `
+//       SELECT
+//         t.id,
+//         t.account_id,
+//         t.description,
+//         t.category,
+//         t.amount,
+//         t.date
+//       FROM transactions t
+//       WHERE t.user_id = $1
+//       ORDER BY t.date DESC
+//       `,
+//       [userId]
+//     );
+
+//     // Attach transactions to their respective account
+//     const accountsWithTx = accounts.map((account: any) => ({
+//       ...account,
+//       recent_transactions: transactionsResult.rows
+//         .filter((tx) => tx.account_id === account.id)
+//         .slice(0, 5), // only latest 5
+//     }));
+
+//     res.json(accountsWithTx);
+//   } catch (err) {
+//     console.error("Error fetching accounts:", err);
+//     res.status(500).json({ error: "Failed to fetch accounts" });
+//   }
+// }
