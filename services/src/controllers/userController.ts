@@ -30,7 +30,7 @@ export async function getOrCreateMonoCustomer(req: Request, res: Response) {
     try {
       const resp = await axios.post(
         "https://api.withmono.com/v2/accounts/initiate",
-        { customer: { id: String(userId), name, email } },
+        { customer: { id: String(userId), name, email }, scope: "auth" },
         {
           headers: {
             "mono-sec-key": MONO_SECRET_KEY,
