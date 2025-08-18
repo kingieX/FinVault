@@ -29,7 +29,7 @@ export async function getOrCreateMonoCustomer(req: Request, res: Response) {
     // Try Mono “customers” endpoint if available to you
     try {
       const resp = await axios.post(
-        "https://api.withmono.com/customers",
+        "https://api.withmono.com/v2/accounts/initiate",
         { customer: { id: String(userId), name, email } },
         {
           headers: {

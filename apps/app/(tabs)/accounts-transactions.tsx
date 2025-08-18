@@ -15,6 +15,7 @@ import Toast from "react-native-toast-message";
 import { getToken } from "@/lib/storage";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+console.log("API URL:", API_URL);
 
 export default function AccountsTransactionsScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
