@@ -15,7 +15,7 @@ import Toast from "react-native-toast-message";
 import { getToken } from "@/lib/storage";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
-console.log("API URL:", API_URL);
+// console.log("API URL:", API_URL);
 
 export default function AccountsTransactionsScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -82,9 +82,9 @@ export default function AccountsTransactionsScreen() {
       return acc;
     }, {});
 
-  const monoConfig = {
-    publicKey: "test_pk_tl7dpn4m0a4nrrlolcbk",
-    // process.env.EXPO_PUBLIC_MONO_PUBLIC_KEY ||
+  const config = {
+    publicKey:
+      process.env.EXPO_PUBLIC_MONO_PUBLIC_KEY || "test_pk_tl7dpn4m0a4nrrlolcbk",
     scope: "auth", // you can add "transactions" if enabled on your account; the v2 API calls above fetch them anyway
     data: {
       customer: { id: customerId },
@@ -153,7 +153,7 @@ export default function AccountsTransactionsScreen() {
   }
 
   return (
-    <MonoProvider {...monoConfig}>
+    <MonoProvider {...config}>
       <ScrollView className="flex-1 bg-white p-6">
         {/* Accounts */}
         <Text className="text-2xl font-semibold mb-4">Accounts</Text>

@@ -11,49 +11,54 @@ export function getMe(req: Request, res: Response) {
 
 // function to get mono-customer
 export async function getOrCreateMonoCustomer(req: Request, res: Response) {
-  const userId = (req as any).user.id;
-
   try {
-    const { rows } = await pool.query(
-      "SELECT mono_customer_id, name, email FROM users WHERE id = $1",
-      [userId]
+    const userId = (req as any).user.id;
+    const userRes = await pool.query("SELECT * FROM users WHERE id=$1", [
+      userId,
+    ]);
+    const user = userRes.rows[0];
+
+    // If we already saved a mono_customer_id, reuse it
+    if (user.mono_customer_id) {
+      return res.json({ customerId: user.mono_customer_id });
+    }
+
+    // Otherwise, call Mono API to initiate account linking
+    const resp = await axios.post(
+      "https://api.withmono.com/v2/accounts/initiate",
+      {
+        customer: {
+          name: user.name,
+          email: user.email,
+        },
+        scope: "auth",
+        meta: { ref: `user_${userId}_${Date.now()}` },
+      },
+      {
+        headers: {
+          "mono-sec-key": MONO_SECRET_KEY,
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+      }
     );
-    if (!rows.length) return res.status(404).json({ error: "User not found" });
 
-    let { mono_customer_id, name, email } = rows[0];
-
-    if (mono_customer_id) {
-      return res.json({ customerId: mono_customer_id });
+    const customerId = resp.data?.data?.customer || resp.data?.customer;
+    console.log("Mono customer ID:", resp.data);
+    if (!customerId) {
+      console.error("Invalid initiate response", resp.data);
+      return res.status(500).json({ error: "Failed to create Mono customer" });
     }
 
-    // Try Mono “customers” endpoint if available to you
-    try {
-      const resp = await axios.post(
-        "https://api.withmono.com/v2/accounts/initiate",
-        { customer: { id: String(userId), name, email }, scope: "auth" },
-        {
-          headers: {
-            "mono-sec-key": MONO_SECRET_KEY,
-            accept: "application/json",
-          },
-        }
-      );
-      mono_customer_id = resp.data?.id || resp.data?.data?.id || String(userId);
-    } catch {
-      // Fallback to deterministic string
-      mono_customer_id = `user_${userId}`;
-    }
-
-    await pool.query("UPDATE users SET mono_customer_id = $1 WHERE id = $2", [
-      mono_customer_id,
+    // Save to users table
+    await pool.query("UPDATE users SET mono_customer_id=$1 WHERE id=$2", [
+      customerId,
       userId,
     ]);
 
-    return res.json({ customerId: mono_customer_id });
+    return res.json({ customerId });
   } catch (err: any) {
-    console.error("getOrCreateMonoCustomer error:", err?.response?.data || err);
-    return res
-      .status(500)
-      .json({ error: "Failed to get/create mono customer id" });
+    console.error("getOrCreateMonoCustomer error:", err.response?.data || err);
+    return res.status(500).json({ error: "Failed to create mono customer" });
   }
 }
