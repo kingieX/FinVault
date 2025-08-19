@@ -5,6 +5,7 @@ import {
   initiateReauth,
   listLinkedAccounts,
   listUserTransactions,
+  unlinkAccount,
 } from "../controllers/accountsController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { monoWebhook } from "../controllers/webhookController";
@@ -18,6 +19,9 @@ router.get("/", authMiddleware, listLinkedAccounts);
 router.get("/transactions", authMiddleware, listUserTransactions);
 
 router.post("/link-account", authMiddleware, exchangeMonoCode);
+
+router.post("/unlink-account", authMiddleware, unlinkAccount); // optional helper to unlink an account
+
 router.post("/reauthorise", authMiddleware, initiateReauth); // optional helper to get a reauth link
 
 router.post("/mono-webhook", monoWebhook); // public webhook

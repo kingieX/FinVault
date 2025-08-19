@@ -1,17 +1,17 @@
 import express from "express";
 import { authMiddleware } from "../middleware/authMiddleware";
 import {
+  addAsset,
   getPortfolio,
-  createPortfolio,
-  updatePortfolio,
-  deletePortfolio,
+  getTrending,
+  searchAssets,
 } from "../controllers/portfolioController";
 
 const router = express.Router();
 
-router.get("/", authMiddleware, getPortfolio); // Get portfolio summary
-router.post("/", authMiddleware, createPortfolio); // Create a new portfolio asset
-router.put("/:id", authMiddleware, updatePortfolio); // Update an existing portfolio asset
-router.delete("/:id", authMiddleware, deletePortfolio);
+router.get("/assets", searchAssets); // Search for assets
+router.post("/add", authMiddleware, addAsset); // Add an asset to the portfolio
+router.get("/", authMiddleware, getPortfolio); // Get user's portfolio
+router.get("/trending", getTrending); // Get trending assets
 
 export default router;

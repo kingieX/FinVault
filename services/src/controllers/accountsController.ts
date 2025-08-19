@@ -255,6 +255,53 @@ export async function getAccounts(req: Request, res: Response) {
   }
 }
 
+// Function to unlink account
+export async function unlinkAccount(req: Request, res: Response) {
+  const userId = (req as any).user.id;
+  const { accountId } = req.body;
+
+  if (!accountId) {
+    return res.status(400).json({ error: "accountId is required" });
+  }
+
+  try {
+    // 1) Call Mono unlink endpoint
+    const resp = await axios.post(
+      `https://api.withmono.com/v2/accounts/${accountId}/unlink`,
+      {},
+      {
+        headers: {
+          "mono-sec-key": MONO_SECRET_KEY,
+          accept: "application/json",
+        },
+      }
+    );
+
+    // 2) Delete related transactions first
+    await pool.query(
+      `DELETE FROM transactions WHERE user_id = $1 AND account_id = $2`,
+      [userId, accountId]
+    );
+
+    // 3) Delete account record
+    await pool.query(
+      `DELETE FROM linked_accounts WHERE user_id = $1 AND account_id = $2`,
+      [userId, accountId]
+    );
+
+    res.json({
+      success: true,
+      message: "Account and transactions unlinked successfully",
+      monoResponse: resp.data,
+    });
+  } catch (err: any) {
+    console.error("unlinkAccount error:", err.response?.data || err.message);
+    res
+      .status(500)
+      .json({ error: "Failed to unlink account", details: err.response?.data });
+  }
+}
+
 // Function to get all accounts with their recent transactions
 
 // export async function getAccounts(req: Request, res: Response) {

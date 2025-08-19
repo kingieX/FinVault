@@ -17,6 +17,9 @@ import { pool } from "./lib/db";
 // Schedule the notification checks to run daily at midnight
 import "./scheduler";
 
+// Schedule the asset sync job
+import "./services/syncAssetsJob";
+
 dotenv.config();
 
 const app = express();
