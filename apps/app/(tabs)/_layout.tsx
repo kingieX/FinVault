@@ -87,6 +87,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="trending-up" size={size} color={color} />
           ),
+          headerShown: false,
         }}
       />
       <Tabs.Screen

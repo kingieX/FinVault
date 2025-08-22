@@ -6,8 +6,9 @@ import {
   ActivityIndicator,
   Image,
   TouchableOpacity,
+  Alert,
 } from "react-native";
-import { getAccounts, getTransactions } from "@/lib/api";
+import { getAccounts, getTransactions, unlinkAccount } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 import { Ionicons } from "@expo/vector-icons";
 import { MonoProvider, useMonoConnect } from "@mono.co/connect-react-native";
@@ -182,17 +183,53 @@ export default function AccountsTransactionsScreen() {
             >
               <View className="flex justify-between items-">
                 <View className="flex gap-2">
-                  <View className="flex-row items-center gap-2">
-                    <Ionicons
-                      name={
-                        acc.type !== "savings" ? "wallet" : "wallet-outline"
-                      }
-                      size={20}
-                      color="#4D9351"
-                    />
-                    <Text className="text-gray-500 text-sm">
-                      {acc.type || "Unknown Type"}
-                    </Text>
+                  <View className="flex-row items-center justify-between gap-2 mb-2">
+                    <View className="flex-row items-center gap-2">
+                      <Ionicons
+                        name={
+                          acc.type !== "savings" ? "wallet" : "wallet-outline"
+                        }
+                        size={20}
+                        color="#4D9351"
+                      />
+                      <Text className="text-gray-500 text-sm">
+                        {acc.type || "Unknown Type"}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        Alert.alert(
+                          "Unlink Account",
+                          "If you unlink this account, all its transactions will also be deleted. Are you sure?",
+                          [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Unlink",
+                              style: "destructive",
+                              onPress: async () => {
+                                const res = await unlinkAccount(acc.account_id);
+                                if (res.success) {
+                                  Toast.show({
+                                    type: "success",
+                                    text1: "Account unlinked",
+                                  });
+                                  await fetchData();
+                                } else {
+                                  Toast.show({
+                                    type: "error",
+                                    text1: res.error || "Unlink failed",
+                                  });
+                                }
+                              },
+                            },
+                          ]
+                        );
+                      }}
+                      className="bg-red-500 px-3 py-2 rounded-lg"
+                    >
+                      {/* <Ionicons name="log-out-outline" size={16} color="#fff" /> */}
+                      <Text className="text-white text-xs">Unlink</Text>
+                    </TouchableOpacity>
                   </View>
                   <Text
                     className={`text-3xl font-bold ${

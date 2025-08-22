@@ -107,6 +107,23 @@ export async function linkAccount(code: string) {
   return data;
 }
 
+// Function to unlink account
+export async function unlinkAccount(accountId: string) {
+  const token = await getToken("token");
+  if (!token) throw new Error("No token found");
+
+  const res = await fetch(`${API_URL}/accounts/unlink-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ accountId }),
+  });
+
+  return res.json();
+}
+
 // ##--transaction functions--
 
 // Function to get all transactions for the authenticated user
@@ -239,101 +256,122 @@ export async function getInsights(limit = 3) {
 
 // ##--portfolio functions--
 
-let cachedCryptoList: any[] = [];
-let cachedStockList: any[] = [];
-
-/** Fetch crypto list (cached) */
-export async function fetchCryptoList() {
-  if (cachedCryptoList.length > 0) return cachedCryptoList;
-  const res = await axios.get("https://api.coingecko.com/api/v3/coins/list");
-  cachedCryptoList = res.data;
-  return cachedCryptoList;
+// Function to get all assets from DB
+export async function getAllPortfolioAssets(limit = 50, offset = 0) {
+  const res = await axios.get(`${API_URL}/portfolio/all-assets`, {
+    params: { limit, offset },
+  });
+  return res.data;
 }
 
-/** Fetch stock list (cached, static JSON for now) */
-export async function fetchStockList() {
-  if (cachedStockList.length > 0) return cachedStockList;
-
-  // Example static stock list - replace with your JSON or API call
-  cachedStockList = [
-    { name: "Apple Inc.", symbol: "AAPL" },
-    { name: "Microsoft Corp.", symbol: "MSFT" },
-    { name: "Tesla Inc.", symbol: "TSLA" },
-    { name: "Amazon.com Inc.", symbol: "AMZN" },
-    { name: "Alphabet Inc.", symbol: "GOOGL" },
-  ];
-  return cachedStockList;
-}
-
-/** Fetch current price based on type + symbol */
-export async function getAssetPrice(type: "stock" | "crypto", symbol: string) {
-  if (type === "crypto") {
-    const res = await axios.get(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&vs_currencies=usd`
-    );
-    return res.data[symbol]?.usd || null;
-  } else {
-    const res = await axios.get(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`
-    );
-    return res.data.quoteResponse.result[0]?.regularMarketPrice || null;
+// Function to search for asset
+export async function searchPortfolioAssets(search: string) {
+  try {
+    const res = await axios.get(`${API_URL}/portfolio/assets`, {
+      params: { search },
+    });
+    return res.data; // [{ id, cmc_id, rank, symbol, name, ... }]
+  } catch (err) {
+    console.error("Failed to search assets:", err);
+    throw err;
   }
 }
 
-// Function to get portfolio
-export async function getPortfolio() {
-  const token = await getToken("token");
-  if (!token) return null;
-
-  const res = await axios.get(`${API_URL}/portfolio`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-}
-
-// Function to create a new portfolio asset
-export async function createPortfolio(data: {
-  asset_name: string;
-  asset_type: "stock" | "crypto";
+// ➕ Add asset to portfolio (auth required)
+export async function addPortfolioAsset({
+  symbol,
+  type,
+  quantity,
+  amount,
+}: {
   symbol: string;
-  quantity: number;
-  purchase_price: number;
+  type: "crypto" | "stock"; // extendable
+  quantity?: number;
+  amount?: number;
 }) {
   const token = await getToken("token");
-  if (!token) return null;
+  if (!token) throw new Error("No token found");
 
-  const res = await axios.post(`${API_URL}/portfolio`, data, {
+  try {
+    const res = await axios.post(
+      `${API_URL}/portfolio/add`,
+      { symbol, type, quantity, amount },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return res.data; // { success, symbol, quantity, investedValue }
+  } catch (err) {
+    console.error("Failed to add portfolio asset:", err);
+    throw err;
+  }
+}
+
+// 📊 Get user portfolio (auth required)
+export async function getPortfolio() {
+  const token = await getToken("token");
+  if (!token) throw new Error("No token found");
+
+  try {
+    const res = await axios.get(`${API_URL}/portfolio`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data; // { totalValue, holdings: [...] }
+  } catch (err) {
+    console.error("Failed to fetch portfolio:", err);
+    throw err;
+  }
+}
+
+// 🚀 Get trending assets (no auth needed)
+export async function getTrendingAssets() {
+  try {
+    const res = await axios.get(`${API_URL}/portfolio/trending`);
+    return res.data; // [ { symbol, name, price, percent_change_24h, ... } ]
+  } catch (err) {
+    console.error("Failed to fetch trending assets:", err);
+    throw err;
+  }
+}
+
+// Function to get asset price
+export async function getAssetPrice(cmcId: number) {
+  const token = await getToken("token");
+  if (!token) throw new Error("No token found");
+
+  try {
+    const res = await axios.get(`${API_URL}/portfolio/price`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { cmcId },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Failed to fetch asset price:", err);
+    throw err;
+  }
+}
+
+// Function to get single asset detail
+export async function getAssetDetail(assetId: string) {
+  const token = await getToken("token");
+  if (!token) throw new Error("No token found");
+
+  const res = await axios.get(`${API_URL}/portfolio/asset/${assetId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
 }
-// Function to edit Portfolio Asset
-export async function updatePortfolio(
-  id: string,
-  data: Partial<{
-    asset_name: string;
-    asset_type: "stock" | "crypto";
-    symbol: string;
-    quantity: number;
-    purchase_price: number;
-  }>
-) {
+
+// Function to get portfolio history per time
+export async function getPortfolioHistory(range: "24h" | "7d" | "30d" | "all") {
   const token = await getToken("token");
-  if (!token) return null;
+  if (!token) throw new Error("No token found");
 
-  const res = await axios.put(`${API_URL}/portfolio/${id}`, data, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
-}
-
-// Function to delete Portfolio Asset
-export async function deletePortfolio(id: string) {
-  const token = await getToken("token");
-  if (!token) return null;
-
-  const res = await axios.delete(`${API_URL}/portfolio/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return res.data;
+  try {
+    const res = await axios.get(`${API_URL}/portfolio/history?range=${range}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    console.error("Failed to fetch portfolio history:", err);
+    throw err;
+  }
 }

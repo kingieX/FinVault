@@ -7,7 +7,6 @@ import {
   NativeScrollEvent,
   NativeSyntheticEvent,
   Dimensions,
-  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { formatCurrency } from "@/lib/format";
@@ -15,7 +14,13 @@ import { router } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
-export default function BalanceCards({ accounts }: { accounts: any[] }) {
+export default function BalanceCards({
+  accounts,
+  onRefresh,
+}: {
+  accounts: any[];
+  onRefresh: () => void;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -32,7 +37,7 @@ export default function BalanceCards({ accounts }: { accounts: any[] }) {
               >
                 <Text className="text-white text-xs">View Account</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => RefreshControl}>
+              <TouchableOpacity onPress={onRefresh}>
                 <Ionicons name="refresh-outline" size={24} color="#4D9351" />
               </TouchableOpacity>
             </View>

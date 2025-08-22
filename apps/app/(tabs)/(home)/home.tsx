@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Image,
   // TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { getCurrentUser, getAccounts, getInsights } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
@@ -16,6 +17,7 @@ export default function HomeScreen() {
   const [user, setUser] = useState<any>(null);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [insights, setInsights] = useState<any[]>([]);
 
@@ -31,17 +33,23 @@ export default function HomeScreen() {
 
   // Fetch Account data
   // useEffect(() => {
-  async function fetchData() {
+  async function fetchData(isRefreshing = false) {
     try {
+      if (isRefreshing) setRefreshing(true);
+
       const userData = await getCurrentUser();
       if (userData) setUser(userData);
 
       const accountsData = await getAccounts();
       setAccounts(accountsData);
+
+      const insightsData = await getInsights(3);
+      setInsights(insightsData);
     } catch (err) {
       console.error("Error loading home data:", err);
     } finally {
-      setLoading(false);
+      if (isRefreshing) setRefreshing(false);
+      else setLoading(false);
     }
   }
   // fetchData();
@@ -64,7 +72,17 @@ export default function HomeScreen() {
   else greeting = "Good evening";
 
   return (
-    <ScrollView className="flex-1 bg-white/80">
+    <ScrollView
+      className="flex-1 bg-white/80"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => fetchData(true)}
+          colors={["#4D9351"]}
+          tintColor="#4D9351"
+        />
+      }
+    >
       <View className="px-6 pt-6">
         {/* Greeting */}
         <View className="flex-row items-center mb-1">
@@ -81,7 +99,7 @@ export default function HomeScreen() {
       </View>
 
       {/* ✅ New Balance Cards */}
-      <BalanceCards accounts={accounts} />
+      <BalanceCards accounts={accounts} onRefresh={() => fetchData(true)} />
 
       {/* Balance Cards */}
       {/* <ScrollView
