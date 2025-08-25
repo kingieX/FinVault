@@ -20,6 +20,9 @@ import "./scheduler";
 // Schedule the asset sync job
 import "./services/syncAssetsJob";
 
+// Schedule portfolio history
+import "./services/portfolioHistoryJob";
+
 dotenv.config();
 
 const app = express();

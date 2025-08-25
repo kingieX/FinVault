@@ -54,6 +54,85 @@ export async function getCurrentUser() {
   }
 }
 
+// Function to get user profile
+export async function getUserProfile() {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("No token found, user not authenticated");
+  }
+
+  const res = await axios.get(`${API_URL}/users/profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+}
+
+// Function to update user profile
+export async function updateUserProfile(data: { name: string; email: string }) {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("No token found, user not authenticated");
+  }
+
+  const res = await axios.put(`${API_URL}/users/profile`, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+}
+
+// Function to update user password
+export async function updatePassword(data: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("No token found, user not authenticated");
+  }
+  const res = await axios.put(`${API_URL}/users/password`, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+}
+
+// Function to logout user
+export async function logoutUser() {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("No token found, user not authenticated");
+  }
+  const res = await axios.post(
+    `${API_URL}/users/logout`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return res.data;
+}
+
+// Function to Delete Account
+export async function deleteAccount() {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("No token found, user not authenticated");
+  }
+  const res = await axios.delete(`${API_URL}/users/delete`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+}
+
 // Function to get Mono customer ID
 export async function getMonoCustomer() {
   const token = await getToken("token");
