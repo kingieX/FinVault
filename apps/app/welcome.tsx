@@ -27,8 +27,8 @@ export default function WelcomeScreen() {
             resizeMode="contain"
           />
           {/* Tagline */}
-          <Text className="text-center text-2xl font-semibold text-gray-700 -mt-12">
-            Your money, smarter.
+          <Text className="text-center font-semibold text-gray-700 -mt-12">
+            Smarter money management, powered by you.
           </Text>
         </View>
 

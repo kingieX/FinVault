@@ -24,15 +24,11 @@ export default function HomeScreen() {
   // Fetch insights data
   useEffect(() => {
     (async () => {
-      const data = await getInsights(3);
-      setInsights(data);
       fetchData();
-      // console.log("Insights data:", data);
     })();
   }, []);
 
   // Fetch Account data
-  // useEffect(() => {
   async function fetchData(isRefreshing = false) {
     try {
       if (isRefreshing) setRefreshing(true);
@@ -45,6 +41,7 @@ export default function HomeScreen() {
 
       const insightsData = await getInsights(3);
       setInsights(insightsData);
+      // console.log("Insights data: ", insightsData);
     } catch (err) {
       console.error("Error loading home data:", err);
     } finally {
@@ -52,8 +49,6 @@ export default function HomeScreen() {
       else setLoading(false);
     }
   }
-  // fetchData();
-  // }, []);
 
   if (loading) {
     return (
@@ -98,53 +93,8 @@ export default function HomeScreen() {
         </Text>
       </View>
 
-      {/* ✅ New Balance Cards */}
-      <BalanceCards accounts={accounts} onRefresh={() => fetchData(true)} />
-
       {/* Balance Cards */}
-      {/* <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }} // spacing
-        className="mb-4 bg-white"
-      > */}
-      {/* Total Balance Card */}
-      {/* <View className="bg-white p-4 border border-gray-200 rounded-lg w-[320px] mr-4">
-          <View className="flex-col justify-between gap-4">
-            <View className="flex-row justify-between items-center gap-2 mb-4">
-              <TouchableOpacity
-                onPress={() => console.log("Link account pressed")}
-                className="mt-2 bg-primary py-2 px-4 rounded-full"
-              >
-                <Text className="text-white text-xs">View Account</Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="">
-                <Ionicons name="refresh-outline" size={24} color="#4D9351" />
-              </TouchableOpacity>
-            </View>
-            <View className="flex items-start mb-2">
-              <View className="flex-row items-end gap-2">
-                <Ionicons name="wallet-outline" size={20} color="#4D9351" />
-                <Text className="text-gray-800 text-lg">Total Balance</Text>
-              </View>
-              <Text className="text-2xl font-bold text-primary">
-                {formatCurrency(
-                  accounts.reduce((sum, acc) => sum + Number(acc.balance), 0)
-                )}
-              </Text>
-            </View>
-          </View>
-        </View> */}
-
-      {/* Accounts Count Card */}
-      {/* <View className="bg-white p-4 border border-gray-200 rounded-lg w-[320px] mr-4">
-          <Text className="text-gray-500">Accounts</Text>
-          <Text className="text-2xl font-bold text-blue-500">
-            {accounts.length}
-          </Text>
-        </View>
-
-      </ScrollView> */}
+      <BalanceCards accounts={accounts} onRefresh={() => fetchData(true)} />
 
       {/* Insights */}
       <View className="bg-white pb-4 px-6">
@@ -175,9 +125,25 @@ export default function HomeScreen() {
                 </View>
                 <View className="px-2">
                   <Text className="text-gray-700 text-lg">{i.message}</Text>
-                  <Text className="text-gray-500 text-sm mt-1">
+                  {/* <Text className="text-gray-500 text-sm mt-1">
                     {new Date(i.created_at).toLocaleString()}
-                  </Text>
+                  </Text> */}
+                  <View className="flex-row gap-2 items-center mb-1">
+                    <Text className="text-gray-500 mt-1 text-sm font-medium">
+                      {new Date(i.created_at).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </Text>
+                    <Text className="text-gray-500 text-sm mt-1 font-medium">
+                      {new Date(i.created_at).toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true, // Use AM/PM format
+                      })}
+                    </Text>
+                  </View>
                 </View>
               </View>
             ))}

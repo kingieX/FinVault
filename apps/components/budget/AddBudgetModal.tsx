@@ -20,6 +20,8 @@ const predefinedTags = [
   "Health",
   "Shopping",
   "Savings",
+  "House rent",
+  "others",
 ];
 
 export default function AddBudgetModal({ visible, onClose, onSuccess }: any) {

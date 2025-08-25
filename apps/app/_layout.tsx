@@ -17,7 +17,7 @@ export default function RootLayout() {
   const [loading, setLoading] = useState(true);
 
   // Routes that do not require authentication
-  const publicRoutes = ["/welcome", "/signin", "/signup"];
+  const publicRoutes = ["/", "/welcome", "/signin", "/signup"];
 
   // notification setup
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function RootLayout() {
         const screen = response.notification.request.content.data?.screen;
         if (screen === "budgets") router.push("/(tabs)/budgets");
         else if (screen === "goals") router.push("/(tabs)/goals");
-        else router.push("/(tabs)/(home)/home");
+        else router.push("/(tabs)/home");
       }
     );
     return () => sub.remove();
@@ -43,7 +43,7 @@ export default function RootLayout() {
       if (!token || token === "null" || token === "undefined") {
         // console.warn("No valid token found");
         if (!publicRoutes.includes(pathname)) {
-          router.replace("/welcome");
+          router.replace("/");
         }
         setLoading(false);
         return;
@@ -55,7 +55,7 @@ export default function RootLayout() {
         // console.log("Valid session → dashboard");
         // If user is on a public page but has a valid token, send them to dashboard
         if (publicRoutes.includes(pathname)) {
-          router.replace("/(tabs)/(home)/home");
+          router.replace("/(tabs)/home");
         }
         // If user is on a protected route, allow access
         else if (pathname.startsWith("/(tabs)")) {
@@ -63,7 +63,7 @@ export default function RootLayout() {
           router.push(pathname as any);
         } else if (pathname === "/") {
           // console.warn("Unknown route, redirecting to home");
-          router.replace("/(tabs)/(home)/home");
+          router.replace("/(tabs)/home");
         }
       } else {
         // console.warn("Invalid token/session → signin");
@@ -92,7 +92,7 @@ export default function RootLayout() {
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
-        {/* <Stack.Screen name="index" /> */}
+        <Stack.Screen name="index" />
         <Stack.Screen name="welcome" />
         <Stack.Screen name="signin" />
         <Stack.Screen name="signup" />

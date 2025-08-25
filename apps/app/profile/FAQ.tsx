@@ -1,18 +1,28 @@
-// app/FAQ.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { goBack } from "expo-router/build/global-state/routing";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const faqData = [
-  { q: "How do I reset my password?", a: "Go to Settings → Change Password." },
   {
-    q: "How do I add an asset?",
-    a: "On Portfolio, press the + button to add assets.",
+    q: "How does FinVault categorize my expenses?",
+    a: "FinVault automatically categorizes your transactions (e.g., food, rent, travel) from your synced bank accounts. You can also manually override the categories or create custom ones.",
   },
   {
-    q: "How secure is my data?",
-    a: "We use bank-grade encryption and secure authentication.",
+    q: "How secure is my financial data?",
+    a: "We use bank-grade security protocols. All financial data is protected with end-to-end encryption, and sensitive information like access tokens is stored securely on your device using encrypted local storage. We do not store your bank login details.",
+  },
+  {
+    q: "How does the AI financial coach work?",
+    a: "The AI coach, powered by the Gemini API, provides a conversational assistant to help you understand your financial habits. It can answer questions like 'How did I do this month?' and summarize your financial behavior.",
+  },
+  {
+    q: "How often is my bank data synced?",
+    a: "Our system is designed for real-time feedback. Your financial data should sync within two seconds for small payloads.",
+  },
+  {
+    q: "Can I set up savings goals?",
+    a: "Yes, you can set specific financial goals, such as saving a certain amount for a vacation. FinVault will automatically track your progress and provide updates.",
   },
 ];
 
@@ -23,7 +33,9 @@ export default function FAQ() {
         <TouchableOpacity onPress={() => goBack()}>
           <Ionicons name="arrow-back-outline" size={24} color="#000" />
         </TouchableOpacity>
-        <Text className="text-2xl font-semibold">Terms of service</Text>
+        <Text className="text-2xl font-semibold">
+          Frequently Asked Questions
+        </Text>
         <TouchableOpacity>
           <Ionicons name="refresh-outline" size={24} color="#fff" />
         </TouchableOpacity>

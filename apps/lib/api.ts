@@ -231,6 +231,17 @@ export async function getBudgets() {
   return res.data;
 }
 
+// Function to get a single budget by ID
+export async function getBudgetById(id: string) {
+  const token = await getToken("token");
+  if (!token) throw new Error("User is not authenticated.");
+
+  const res = await axios.get(`${API_URL}/budgets/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
 // Function to Create a new budget
 export async function createBudget(data: {
   category: string;
@@ -253,6 +264,56 @@ export async function createBudget(data: {
   return res.data;
 }
 
+// Function to update an existing budget
+export async function updateBudget(
+  id: string,
+  data: {
+    category?: string;
+    limit_amount?: number;
+    spent_amount?: number;
+    month?: number;
+    year?: number;
+    icon?: string;
+    color?: string;
+    description?: string;
+    tags?: string;
+  }
+) {
+  const token = await getToken("token");
+  if (!token) throw new Error("User is not authenticated.");
+
+  const res = await axios.put(`${API_URL}/budgets/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// Function to delete an existing budget
+export async function deleteBudget(id: string) {
+  const token = await getToken("token");
+  if (!token) throw new Error("User is not authenticated.");
+
+  const res = await axios.delete(`${API_URL}/budgets/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// Function to update spending
+export async function updateSpentAmount(budgetId: string, amount: number) {
+  const token = await getToken("token");
+  if (!token) throw new Error("User is not authenticated.");
+
+  const res = await axios.patch(
+    `${API_URL}/budgets/${budgetId}/spent`,
+    { amount },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return res.data;
+}
+
 // ##--goal functions--
 
 // Function to Get goals
@@ -261,6 +322,17 @@ export async function getGoals() {
   if (!token) return [];
 
   const res = await axios.get(`${API_URL}/goals`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// FUnction to get a single goal
+export async function getGoalById(id: string) {
+  const token = await getToken("token");
+  if (!token) return [];
+
+  const res = await axios.get(`${API_URL}/goals/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
@@ -284,6 +356,60 @@ export async function createGoal(data: {
   return res.data;
 }
 
+// Function to update an existing goal
+export async function updateGoal(
+  id: string,
+  data: {
+    name?: string;
+    target_amount?: number;
+    saved_amount?: number;
+    deadline?: string;
+    category?: string;
+    icon?: string;
+  }
+) {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("User is not authenticated.");
+  }
+
+  const res = await axios.put(`${API_URL}/goals/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// function to specifically top up a goal's amount (PATCH)
+export async function topUpGoal(goalId: string, amount: number) {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("User is not authenticated.");
+  }
+
+  // The new endpoint will handle the saved_amount calculation on the backend
+  const res = await axios.patch(
+    `${API_URL}/goals/${goalId}/top-up`,
+    { amount },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  return res.data;
+}
+
+// Function to delete a goal
+export async function deleteGoal(id: string) {
+  const token = await getToken("token");
+  if (!token) {
+    throw new Error("User is not authenticated.");
+  }
+
+  const res = await axios.delete(`${API_URL}/goals/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
 // ##--notification functions--
 
 // Function to Get notifications
@@ -292,6 +418,17 @@ export async function getNotifications() {
   if (!token) return [];
 
   const res = await axios.get(`${API_URL}/notifications`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
+
+// Function to get single notification
+export async function getNotificationById(id: string) {
+  const token = await getToken("token");
+  if (!token) throw new Error("User is not authenticated.");
+
+  const res = await axios.get(`${API_URL}/notifications/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;

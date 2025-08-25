@@ -6,32 +6,42 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getGoals } from "@/lib/api";
 import ProgressBar from "@/components/ProgressBar";
 import { formatCurrency } from "@/lib/format";
-import GoalModal from "@/components/GoalModal";
+import AddGoalModal from "@/components/goal/AddGoalModal";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { AppStackParamList } from "@/types/navigation";
 
 export default function GoalsScreen() {
+  const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchGoals = async () => {
+  useEffect(() => {
+    (async () => {
+      fetchGoals();
+    })();
+  }, []);
+
+  async function fetchGoals(isRefreshing = false) {
     try {
+      if (isRefreshing) setRefreshing(true);
+
       const data = await getGoals();
       setGoals(data || []);
     } catch (err) {
       console.error("Failed to fetch goals:", err);
     } finally {
+      if (isRefreshing) setRefreshing(false);
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchGoals();
-  }, []);
+  }
 
   if (loading) {
     return (
@@ -42,7 +52,17 @@ export default function GoalsScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white p-6">
+    <ScrollView
+      className="flex-1 bg-white p-6"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => fetchGoals(true)}
+          colors={["#4D9351"]}
+          tintColor="#4D9351"
+        />
+      }
+    >
       {/* Add Goal Button */}
       <TouchableOpacity
         className="flex-1 flex-row justify-center bg-primary py-4 rounded-lg items-center mb-6"
@@ -74,6 +94,9 @@ export default function GoalsScreen() {
             <TouchableOpacity
               key={goal.id}
               className="bg-white p-8 rounded-xl shadow-sm mb-4"
+              onPress={() =>
+                navigation.navigate("GoalDetail", { goalId: goal.id })
+              }
             >
               <View className="flex-row justify-center items-center mb-2">
                 <View className="w-10 h-10 bg-gray-100 rounded-full items-center justify-center">
@@ -129,7 +152,7 @@ export default function GoalsScreen() {
       </View>
 
       {/* Goal Creation Modal */}
-      <GoalModal
+      <AddGoalModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSuccess={fetchGoals}

@@ -8,11 +8,13 @@ import {
   listNotifications,
   markRead,
   getUnreadCount,
+  getNotificationById,
 } from "../controllers/notificationsController";
 
 const router = express.Router();
 
 router.get("/", authMiddleware, getNotifications); // /api/v1/notifications
+router.get("/:id", authMiddleware, getNotificationById);
 router.post("/", authMiddleware, createNotification); // Create a new notification
 router.patch("/:id/read", authMiddleware, markNotificationRead); // Mark a notification as read
 router.get("/unread-count", authMiddleware, getUnreadCount); // Get unread notification count

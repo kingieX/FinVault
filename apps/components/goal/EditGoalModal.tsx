@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,12 +11,13 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Toast from "react-native-toast-message";
 import { Picker } from "@react-native-picker/picker";
-import { createGoal } from "@/lib/api";
+import { updateGoal } from "@/lib/api";
 
-interface GoalModalProps {
+interface EditGoalModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editingGoal: any;
 }
 
 const categoryOptions = [
@@ -40,11 +41,12 @@ const iconOptions = [
   "gift-outline",
 ];
 
-export default function GoalModal({
+export default function EditGoalModal({
   visible,
   onClose,
   onSuccess,
-}: GoalModalProps) {
+  editingGoal,
+}: EditGoalModalProps) {
   const [goalName, setGoalName] = useState("");
   const [targetAmount, setTargetAmount] = useState("");
   const [savedAmount, setSavedAmount] = useState("");
@@ -52,9 +54,19 @@ export default function GoalModal({
   const [category, setCategory] = useState<string>("");
   const [icon, setIcon] = useState("cash-outline");
   const [loading, setLoading] = useState(false);
-
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+
+  useEffect(() => {
+    if (editingGoal) {
+      setGoalName(editingGoal.name);
+      setTargetAmount(String(editingGoal.target_amount));
+      setSavedAmount(String(editingGoal.saved_amount));
+      setDeadline(editingGoal.deadline.split("T")[0]);
+      setCategory(editingGoal.category || "");
+      setIcon(editingGoal.icon || "cash-outline");
+    }
+  }, [editingGoal]);
 
   const handleDateChange = (_event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -64,7 +76,7 @@ export default function GoalModal({
     }
   };
 
-  const handleSave = async () => {
+  const handleUpdate = async () => {
     if (!goalName || !targetAmount || !deadline) {
       Toast.show({
         type: "error",
@@ -75,37 +87,31 @@ export default function GoalModal({
     }
     setLoading(true);
     try {
-      await createGoal({
+      const payload = {
         name: goalName,
         target_amount: Number(targetAmount),
-        saved_amount: savedAmount ? Number(savedAmount) : 0,
+        saved_amount: Number(savedAmount),
         deadline,
         category: category || undefined,
         icon: icon || undefined,
-      });
+      };
 
-      // Reset form
-      setGoalName("");
-      setTargetAmount("");
-      setSavedAmount("");
-      setDeadline("");
-      setCategory("");
-      setIcon("cash-outline");
+      await updateGoal(editingGoal.id, payload);
 
       onSuccess();
       onClose();
 
       Toast.show({
         type: "success",
-        text1: "Goal created",
-        text2: "Goal created successfully",
+        text1: "Goal updated",
+        text2: "Goal updated successfully",
       });
     } catch (err) {
-      console.error("Error creating goal:", err);
+      console.error("Error updating goal:", err);
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Could not create goal",
+        text2: "Could not update goal",
       });
     } finally {
       setLoading(false);
@@ -122,57 +128,60 @@ export default function GoalModal({
       <View className="flex-1 justify-center items-center bg-black/50 px-6">
         <View className="bg-white w-full p-6 rounded-lg max-h-[90%]">
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text className="text-xl font-medium mb-4">Create New Goal</Text>
+            <Text className="text-xl font-medium mb-4">Edit Goal</Text>
 
-            {/* Goal Name */}
-            <Text className="mb-1 text-xl">Goal name</Text>
+            {/* Goal name input */}
+            <Text className="text-xl font-medium mb-1">Goal name</Text>
             <TextInput
-              placeholder="Goal Name"
+              placeholder="e.g., New Car, Dream Vacation"
               value={goalName}
               onChangeText={setGoalName}
               className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
             />
 
-            {/* Target Amount */}
-            <Text className="mb-1 text-xl">Target amount</Text>
+            {/* Target Amount input */}
+            <Text className="text-xl font-medium mb-1">Target Amount</Text>
             <TextInput
-              placeholder="Target Amount"
+              placeholder="e.g., 500000"
               value={targetAmount}
               onChangeText={setTargetAmount}
               keyboardType="numeric"
               className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
             />
 
-            {/* Saved Amount */}
-            <Text className="mb-1 text-xl">Amount saved</Text>
+            {/* Saved Amount input */}
+            <Text className="text-xl font-medium mb-1">Saved Amount</Text>
             <TextInput
-              placeholder="Already Saved (optional)"
+              placeholder="e.g., 50000"
               value={savedAmount}
               onChangeText={setSavedAmount}
               keyboardType="numeric"
               className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
             />
 
-            {/* Deadline Picker */}
-            <Text className="mb-1 text-xl">Deadline</Text>
+            {/* Deadline input with date picker */}
+            <Text className="text-xl font-medium mb-1">Deadline</Text>
             <TouchableOpacity
-              className="border border-gray-300 rounded-lg px-4 py-3 mb-4"
               onPress={() => setShowDatePicker(true)}
+              className="border border-gray-300 rounded-lg px-4 py-3 mb-4 flex-row justify-between items-center"
             >
-              <Text className={deadline ? "text-black" : "text-gray-400"}>
-                {deadline || "Select deadline date"}
+              <Text className="text-gray-500">
+                {deadline
+                  ? new Date(deadline).toLocaleDateString()
+                  : "Select Date"}
               </Text>
+              <Ionicons name="calendar-outline" size={24} color="#888" />
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
-                value={deadline ? new Date(deadline) : new Date()}
+                value={new Date(deadline || Date.now())}
                 mode="date"
                 display="default"
                 onChange={handleDateChange}
               />
             )}
 
-            {/* Category Selector (opens its own mini-modal with Picker) */}
+            {/* Category Selector (using the same mini-modal as AddGoalModal) */}
             <Text className="mb-1 text-xl">Category</Text>
             <TouchableOpacity
               className="border border-gray-300 rounded-lg px-4 py-3 mb-4 flex-row justify-between items-center"
@@ -186,7 +195,7 @@ export default function GoalModal({
               <Ionicons name="chevron-down" size={18} color="#6b7280" />
             </TouchableOpacity>
 
-            {/* Icon Selector */}
+            {/* Icon Selector (using the same horizontal scroll view as AddGoalModal) */}
             <Text className="mb-1 text-xl">Icon</Text>
             <ScrollView
               horizontal
@@ -208,21 +217,18 @@ export default function GoalModal({
               ))}
             </ScrollView>
 
-            {/* Save Button */}
             <TouchableOpacity
-              //   className="bg-primary py-4 rounded-lg items-center"
               className={`py-4 rounded-lg items-center ${
                 loading ? "bg-gray-400" : "bg-primary"
-              } `}
-              onPress={handleSave}
+              }`}
+              onPress={handleUpdate}
               disabled={loading}
             >
               <Text className="text-white font-medium">
-                {loading ? "Saving goal..." : "Save Goal"}
+                {loading ? "Updating goal..." : "Update Goal"}
               </Text>
             </TouchableOpacity>
 
-            {/* Cancel Button */}
             <TouchableOpacity
               className="mt-3 py-4 rounded-lg items-center border border-gray-300"
               onPress={onClose}
@@ -233,7 +239,7 @@ export default function GoalModal({
         </View>
       </View>
 
-      {/* Mini-modal for Category Picker */}
+      {/* Mini-modal for Category Picker (copied from AddGoalModal) */}
       <Modal
         visible={showCategoryPicker}
         animationType="slide"

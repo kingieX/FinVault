@@ -12,7 +12,7 @@ export default function TabLayout() {
     async function loadCount() {
       const count = await getUnreadNotificationsCount();
       setUnreadCount(count);
-      // console.log("Unread notifications count:", count);
+      console.log("Unread notifications count:", count);
     }
     loadCount();
     const interval = setInterval(loadCount, 30000); // refresh every 30 sec
@@ -45,7 +45,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="(home)"
+        name="home"
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => (

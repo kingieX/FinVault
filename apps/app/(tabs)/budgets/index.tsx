@@ -7,19 +7,24 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  RefreshControl,
 } from "react-native";
 import ProgressBar from "@/components/ProgressBar";
 import { formatCurrency } from "@/lib/format";
 import { getBudgets } from "@/lib/api";
 import { Ionicons } from "@expo/vector-icons";
 
-import AddBudgetModal from "@/components/AddBudgetModal";
+import AddBudgetModal from "@/components/budget/AddBudgetModal";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { AppStackParamList } from "@/types/navigation";
 
 export default function BudgetOverviewScreen() {
+  const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const [budgetTotal, setBudgetTotal] = useState(0);
   const [budgetRemaining, setBudgetRemaining] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -28,8 +33,10 @@ export default function BudgetOverviewScreen() {
   }, []);
 
   // Fetch budgets from API
-  async function fetchBudgets() {
+  async function fetchBudgets(isRefreshing = false) {
     try {
+      if (isRefreshing) setRefreshing(true);
+
       const budgets = await getBudgets();
       if (budgets && budgets.length > 0) {
         // Calculate total and remaining
@@ -57,10 +64,13 @@ export default function BudgetOverviewScreen() {
         }));
 
         setCategories(mapped);
+
+        // console.log("Budget data: ", budgets);
       }
     } catch (err) {
       console.error("Failed to fetch budgets:", err);
     } finally {
+      if (isRefreshing) setRefreshing(false);
       setLoading(false);
     }
   }
@@ -74,14 +84,24 @@ export default function BudgetOverviewScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-white p-6">
+    <ScrollView
+      className="flex-1 bg-white p-6"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => fetchBudgets(true)}
+          colors={["#4D9351"]}
+          tintColor="#4D9351"
+        />
+      }
+    >
       {/* Budget Summary */}
       <View className="bg-gray-50 rounded-xl shadow-sm p-4 mb-6">
         <View className="flex-row justify-between items-center mt-4 mb-4">
           <Text className="text-3xl font-medium">This Month's Budget</Text>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <Text className="text-primary text-lg font-medium">Edit</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         <View className="flex-row justify-between items-center mb-4">
           <Text className=" text-xl">Total Budget</Text>
@@ -136,6 +156,9 @@ export default function BudgetOverviewScreen() {
             <TouchableOpacity
               key={cat.id}
               className="bg-white p-4 rounded-xl shadow-sm mb-4"
+              onPress={() =>
+                navigation.navigate("BudgetDetail", { budgetId: cat.id })
+              }
             >
               <View className="flex-row justify-between items-center mb-2">
                 <View className="flex-row justify-start items-center mb-2">

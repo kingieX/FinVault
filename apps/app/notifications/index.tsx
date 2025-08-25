@@ -12,8 +12,11 @@ import { getNotifications } from "@/lib/api";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { goBack } from "expo-router/build/global-state/routing";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { AppStackParamList } from "@/types/navigation";
 
 export default function NotificationsScreen() {
+  const navigation = useNavigation<NavigationProp<AppStackParamList>>();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,6 +90,11 @@ export default function NotificationsScreen() {
                     ? "bg-gray-100 border-gray-100" // read = light gray
                     : "bg-primary/10 border-primary" // unread = light green
                 }`}
+                onPress={() =>
+                  navigation.navigate("NotificationDetail", {
+                    notificationId: n.id,
+                  })
+                }
               >
                 <View className="flex flex-row items-center justify-between">
                   <View className="flex flex-row items-center">

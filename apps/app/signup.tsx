@@ -67,7 +67,7 @@ export default function SignupScreen() {
     try {
       setLoading(true);
       await signup(email, password, fullName);
-      router.replace("/(tabs)/(home)/home");
+      router.replace("/(tabs)/home");
       Toast.show({
         type: "success",
         text1: "Signup Successful",

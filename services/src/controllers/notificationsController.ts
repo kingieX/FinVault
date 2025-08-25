@@ -18,6 +18,31 @@ export async function getNotifications(req: Request, res: Response) {
   }
 }
 
+// Function to get a single notification by ID
+export async function getNotificationById(req: Request, res: Response) {
+  const { id } = req.params;
+
+  try {
+    const userId = (req as any).user.id;
+
+    const result = await pool.query(
+      "SELECT * FROM notifications WHERE id = $1 AND user_id = $2",
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Notification not found or unauthorized" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error fetching notification:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
 // Create a notification
 export async function createNotification(req: Request, res: Response) {
   const { title, message, type } = req.body;

@@ -59,7 +59,7 @@ export default function SigninScreen() {
     try {
       setLoading(true);
       await login(email, password);
-      router.replace("/(tabs)/(home)/home");
+      router.replace("/(tabs)/home");
       Toast.show({
         type: "success",
         text1: "Login Successful",
